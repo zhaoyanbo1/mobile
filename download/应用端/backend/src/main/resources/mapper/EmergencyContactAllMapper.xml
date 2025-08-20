@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.EmergencyContactAllMapper">
+    <sql id="emergency_contact_list_sql">
+        select
+        ui.password   ,
+        ec.user_info_user_info_id_1   ,
+        ui.registration_date   ,
+        ec.emergency_contact_id   ,
+        ec.name   ,
+        ui.phone_number  as phone_number_ui  ,
+        ec.phone_number   ,
+        ui.last_login_date   ,
+        ui.username   
+
+
+        FROM emergency_contact ec
+        left join user_info ui on ec.user_info_user_info_id_1 = ui.user_info_id
+
+        </sql>
+
+        <resultMap id="selectListNewMap" type="com.kuafu.web.entity.EmergencyContactAll">
+
+        <result property="password" column="password"/>
+
+        <result property="userInfoUserInfoId1" column="user_info_user_info_id_1"/>
+
+        <result property="registrationDate" column="registration_date"/>
+
+        <result property="emergencyContactId" column="emergency_contact_id"/>
+
+        <result property="name" column="name"/>
+
+
+        <result property="phoneNumber" column="phone_number"/>
+
+        <result property="lastLoginDate" column="last_login_date"/>
+
+        <result property="username" column="username"/>
+
+
+
+
+        </resultMap>
+
+<select id="selectListNew"  resultMap="selectListNewMap">
+select
+ui.password   ,
+ec.user_info_user_info_id_1   ,
+ui.registration_date   ,
+ec.emergency_contact_id   ,
+ec.name   ,
+ui.phone_number  as phone_number_ui  ,
+ec.phone_number   ,
+ui.last_login_date   ,
+ui.username   
+
+
+
+        FROM emergency_contact ec
+        left join
+
+        user_info
+
+        ui on ec.user_info_user_info_id_1 = ui.user_info_id
+
+
+
+${ew.customSqlSegment}
+        </select>
+
+<select id="selectList" resultType="com.kuafu.web.entity.EmergencyContactAll">
+select
+ui.password   ,
+ec.user_info_user_info_id_1   ,
+ui.registration_date   ,
+ec.emergency_contact_id   ,
+ec.name   ,
+ui.phone_number  as phone_number_ui  ,
+ec.phone_number   ,
+ui.last_login_date   ,
+ui.username   
+
+
+        FROM emergency_contact ec
+        left join user_info ui on ec.user_info_user_info_id_1 = ui.user_info_id
+
+
+${ew.customSqlSegment}
+        </select>
+
+<select id="selectPage" resultType="com.kuafu.web.entity.EmergencyContactAll">
+select
+ui.password  ,
+ec.user_info_user_info_id_1  ,
+ui.registration_date  ,
+ec.emergency_contact_id  ,
+ec.name  ,
+ui.phone_number  as phone_number_ui ,
+ec.phone_number  ,
+ui.last_login_date  ,
+ui.username  
+
+
+
+        FROM emergency_contact ec
+        left join user_info ui on ec.user_info_user_info_id_1 = ui.user_info_id
+
+
+
+
+
+${ew.customSqlSegment}
+        </select>
+
+<select id="selectById" resultType="com.kuafu.web.entity.EmergencyContactAll">
+select
+ui.password  ,
+ec.user_info_user_info_id_1  ,
+ui.registration_date  ,
+ec.emergency_contact_id  ,
+ec.name  ,
+ui.phone_number  as phone_number_ui ,
+ec.phone_number  ,
+ui.last_login_date  ,
+ui.username  
+
+
+        FROM emergency_contact ec
+        left join user_info ui on ec.user_info_user_info_id_1 = ui.user_info_id
+
+
+
+        where ec.emergency_contact_id = #{id}
+        </select>
+
+<select id="selectCount" resultType="java.lang.Long">
+select
+count(*)
+
+
+
+FROM emergency_contact ec
+left join user_info ui on ec.user_info_user_info_id_1 = ui.user_info_id
+
+
+
+${ew.customSqlSegment}
+
+
+        </select>
+
+        </mapper>

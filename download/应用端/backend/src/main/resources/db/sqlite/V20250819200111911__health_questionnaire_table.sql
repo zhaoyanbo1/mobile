@@ -1,0 +1,21 @@
+drop table if exists `health_questionnaire`;
+create table `health_questionnaire` (
+	health_questionnaire_id	INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_info_user_info_id_1	INTEGER	not null,
+	name	varchar(512)	not null,
+	age	INTEGER	not null,
+	residence	varchar(512)	,
+	chronic_disease	varchar(512)	,
+	allergy_history	varchar(512)	,
+	common_medication	varchar(512)	,
+	diet_preference	varchar(512)	,
+	exercise_frequency	varchar(512)	,
+	creation_time	DATETIME	,
+	update_time	DATETIME	,
+	version	INTEGER	
+);insert into	health_questionnaire	(creation_time,health_questionnaire_id,user_info_user_info_id_1,allergy_history,version,update_time,common_medication,name,exercise_frequency,residence,chronic_disease,age,diet_preference)	values	("2023-01-10 09:00:00.0 00:00:00.0","1","1","花粉过敏","3","2024-05-30 09:00:00.0 00:00:00.0","降压药","李大爷","每天","独居","高血压","68","清淡");
+insert into	health_questionnaire	(creation_time,health_questionnaire_id,user_info_user_info_id_1,allergy_history,version,update_time,common_medication,name,exercise_frequency,residence,chronic_disease,age,diet_preference)	values	("2023-02-16 10:00:00.0 00:00:00.0","2","2","无","2","2024-05-28 10:00:00.0 00:00:00.0","胰岛素","王老太","每周3次","与家人同住","糖尿病","72","低糖");
+insert into	health_questionnaire	(creation_time,health_questionnaire_id,user_info_user_info_id_1,allergy_history,version,update_time,common_medication,name,exercise_frequency,residence,chronic_disease,age,diet_preference)	values	("2023-03-06 11:00:00.0 00:00:00.0","3","3","青霉素","1","2024-05-30 11:00:00.0 00:00:00.0","止痛药","张老汉","偶尔","与配偶同住","关节炎","75","高蛋白");
+insert into	health_questionnaire	(creation_time,health_questionnaire_id,user_info_user_info_id_1,allergy_history,version,update_time,common_medication,name,exercise_frequency,residence,chronic_disease,age,diet_preference)	values	("2023-04-12 14:00:00.0 00:00:00.0","4","4","无","1","2024-05-31 14:00:00.0 00:00:00.0","无","赵奶奶","每天","养老院","无","70","低盐");
+insert into	health_questionnaire	(creation_time,health_questionnaire_id,user_info_user_info_id_1,allergy_history,version,update_time,common_medication,name,exercise_frequency,residence,chronic_disease,age,diet_preference)	values	("2023-05-21 15:00:00.0 00:00:00.0","5","5","阿司匹林","2","2024-06-01 15:00:00.0 00:00:00.0","心脏药","孙叔叔","每周5次","与子女同住","冠心病","65","均衡");
+insert into	health_questionnaire	(creation_time,health_questionnaire_id,user_info_user_info_id_1,allergy_history,version,update_time,common_medication,name,exercise_frequency,residence,chronic_disease,age,diet_preference)	values	("2023-06-01 16:00:00.0 00:00:00.0","6","6","尘螨","1","2024-06-02 16:00:00.0 00:00:00.0","吸入剂","周阿姨","每天","独居","哮喘","69","低脂");

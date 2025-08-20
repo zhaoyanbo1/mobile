@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.ActivityRecommendationStatisticsMapper">
+
+    <resultMap id="activity_recommendation_activity_time_datetime_statistic_886e9306_countStatistic0" type="com.kuafu.web.entity.ActivityRecommendationActivityTimeDatetimeStatistic886e9306Count$Statistic0">
+        <result property="activityTime" column="activity_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="activity_recommendation_activity_time_datetime_statistic_d3b0c288_countStatistic0" type="com.kuafu.web.entity.ActivityRecommendationActivityTimeDatetimeStatisticD3b0c288Count$Statistic0">
+        <result property="activityTime" column="activity_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="activity_recommendation_activity_time_datetime_statistic_470f405b_countStatistic0" type="com.kuafu.web.entity.ActivityRecommendationActivityTimeDatetimeStatistic470f405bCount$Statistic0">
+        <result property="activityTime" column="activity_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="activity_recommendation_creation_time_datetime_statistic_08c7391b_countStatistic0" type="com.kuafu.web.entity.ActivityRecommendationCreationTimeDatetimeStatistic08c7391bCount$Statistic0">
+        <result property="creationTime" column="creation_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="activity_recommendation_creation_time_datetime_statistic_ef3081ce_countStatistic0" type="com.kuafu.web.entity.ActivityRecommendationCreationTimeDatetimeStatisticEf3081ceCount$Statistic0">
+        <result property="creationTime" column="creation_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="activity_recommendation_creation_time_datetime_statistic_d08da80b_countStatistic0" type="com.kuafu.web.entity.ActivityRecommendationCreationTimeDatetimeStatisticD08da80bCount$Statistic0">
+        <result property="creationTime" column="creation_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+
+
+
+    <select id="activity_recommendation_activity_time_datetime_statistic_886e9306_count" resultMap="activity_recommendation_activity_time_datetime_statistic_886e9306_countStatistic0">
+        select
+                ar.activity_time  
+                ,  count(ar.activity_recommendation_id)
+ as result_kf
+        FROM activity_recommendation ar
+
+        ${ew.customSqlSegment}
+        group by 
+            ar.activity_time
+    </select>
+
+
+    <select id="activity_recommendation_activity_time_datetime_statistic_d3b0c288_count" resultMap="activity_recommendation_activity_time_datetime_statistic_d3b0c288_countStatistic0">
+        select
+                ar.activity_time  
+                ,  count(ar.activity_recommendation_id)
+ as result_kf
+        FROM activity_recommendation ar
+
+        ${ew.customSqlSegment}
+        group by 
+            ar.activity_time
+    </select>
+
+
+    <select id="activity_recommendation_activity_time_datetime_statistic_470f405b_count" resultMap="activity_recommendation_activity_time_datetime_statistic_470f405b_countStatistic0">
+        select
+                ar.activity_time  
+                ,  count(ar.activity_recommendation_id)
+ as result_kf
+        FROM activity_recommendation ar
+
+        ${ew.customSqlSegment}
+        group by 
+            ar.activity_time
+    </select>
+
+
+    <select id="activity_recommendation_creation_time_datetime_statistic_08c7391b_count" resultMap="activity_recommendation_creation_time_datetime_statistic_08c7391b_countStatistic0">
+        select
+                ar.creation_time  
+                ,  count(ar.activity_recommendation_id)
+ as result_kf
+        FROM activity_recommendation ar
+
+        ${ew.customSqlSegment}
+        group by 
+            ar.creation_time
+    </select>
+
+
+    <select id="activity_recommendation_creation_time_datetime_statistic_ef3081ce_count" resultMap="activity_recommendation_creation_time_datetime_statistic_ef3081ce_countStatistic0">
+        select
+                ar.creation_time  
+                ,  count(ar.activity_recommendation_id)
+ as result_kf
+        FROM activity_recommendation ar
+
+        ${ew.customSqlSegment}
+        group by 
+            ar.creation_time
+    </select>
+
+
+    <select id="activity_recommendation_creation_time_datetime_statistic_d08da80b_count" resultMap="activity_recommendation_creation_time_datetime_statistic_d08da80b_countStatistic0">
+        select
+                ar.creation_time  
+                ,  count(ar.activity_recommendation_id)
+ as result_kf
+        FROM activity_recommendation ar
+
+        ${ew.customSqlSegment}
+        group by 
+            ar.creation_time
+    </select>
+
+
+
+</mapper>

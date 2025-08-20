@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.HealthQuestionnaireAllMapper">
+    <sql id="health_questionnaire_list_sql">
+        select
+        hq.creation_time   ,
+        hq.health_questionnaire_id   ,
+        hq.user_info_user_info_id_1   ,
+        hq.allergy_history   ,
+        ui.last_login_date   ,
+        hq.version   ,
+        hq.update_time   ,
+        ui.password   ,
+        ui.registration_date   ,
+        hq.common_medication   ,
+        hq.name   ,
+        hq.exercise_frequency   ,
+        ui.phone_number   ,
+        hq.residence   ,
+        hq.chronic_disease   ,
+        hq.age   ,
+        hq.diet_preference   ,
+        ui.username   
+
+
+        FROM health_questionnaire hq
+        left join user_info ui on hq.user_info_user_info_id_1 = ui.user_info_id
+
+        </sql>
+
+        <resultMap id="selectListNewMap" type="com.kuafu.web.entity.HealthQuestionnaireAll">
+
+        <result property="creationTime" column="creation_time"/>
+
+        <result property="healthQuestionnaireId" column="health_questionnaire_id"/>
+
+        <result property="userInfoUserInfoId1" column="user_info_user_info_id_1"/>
+
+        <result property="allergyHistory" column="allergy_history"/>
+
+        <result property="lastLoginDate" column="last_login_date"/>
+
+        <result property="version" column="version"/>
+
+        <result property="updateTime" column="update_time"/>
+
+        <result property="password" column="password"/>
+
+        <result property="registrationDate" column="registration_date"/>
+
+        <result property="commonMedication" column="common_medication"/>
+
+        <result property="name" column="name"/>
+
+        <result property="exerciseFrequency" column="exercise_frequency"/>
+
+        <result property="phoneNumber" column="phone_number"/>
+
+        <result property="residence" column="residence"/>
+
+        <result property="chronicDisease" column="chronic_disease"/>
+
+        <result property="age" column="age"/>
+
+        <result property="dietPreference" column="diet_preference"/>
+
+        <result property="username" column="username"/>
+
+
+
+
+        </resultMap>
+
+<select id="selectListNew"  resultMap="selectListNewMap">
+select
+hq.creation_time   ,
+hq.health_questionnaire_id   ,
+hq.user_info_user_info_id_1   ,
+hq.allergy_history   ,
+ui.last_login_date   ,
+hq.version   ,
+hq.update_time   ,
+ui.password   ,
+ui.registration_date   ,
+hq.common_medication   ,
+hq.name   ,
+hq.exercise_frequency   ,
+ui.phone_number   ,
+hq.residence   ,
+hq.chronic_disease   ,
+hq.age   ,
+hq.diet_preference   ,
+ui.username   
+
+
+
+        FROM health_questionnaire hq
+        left join
+
+        user_info
+
+        ui on hq.user_info_user_info_id_1 = ui.user_info_id
+
+
+
+${ew.customSqlSegment}
+        </select>
+
+<select id="selectList" resultType="com.kuafu.web.entity.HealthQuestionnaireAll">
+select
+hq.creation_time   ,
+hq.health_questionnaire_id   ,
+hq.user_info_user_info_id_1   ,
+hq.allergy_history   ,
+ui.last_login_date   ,
+hq.version   ,
+hq.update_time   ,
+ui.password   ,
+ui.registration_date   ,
+hq.common_medication   ,
+hq.name   ,
+hq.exercise_frequency   ,
+ui.phone_number   ,
+hq.residence   ,
+hq.chronic_disease   ,
+hq.age   ,
+hq.diet_preference   ,
+ui.username   
+
+
+        FROM health_questionnaire hq
+        left join user_info ui on hq.user_info_user_info_id_1 = ui.user_info_id
+
+
+${ew.customSqlSegment}
+        </select>
+
+<select id="selectPage" resultType="com.kuafu.web.entity.HealthQuestionnaireAll">
+select
+hq.creation_time  ,
+hq.health_questionnaire_id  ,
+hq.user_info_user_info_id_1  ,
+hq.allergy_history  ,
+ui.last_login_date  ,
+hq.version  ,
+hq.update_time  ,
+ui.password  ,
+ui.registration_date  ,
+hq.common_medication  ,
+hq.name  ,
+hq.exercise_frequency  ,
+ui.phone_number  ,
+hq.residence  ,
+hq.chronic_disease  ,
+hq.age  ,
+hq.diet_preference  ,
+ui.username  
+
+
+
+        FROM health_questionnaire hq
+        left join user_info ui on hq.user_info_user_info_id_1 = ui.user_info_id
+
+
+
+
+
+${ew.customSqlSegment}
+        </select>
+
+<select id="selectById" resultType="com.kuafu.web.entity.HealthQuestionnaireAll">
+select
+hq.creation_time  ,
+hq.health_questionnaire_id  ,
+hq.user_info_user_info_id_1  ,
+hq.allergy_history  ,
+ui.last_login_date  ,
+hq.version  ,
+hq.update_time  ,
+ui.password  ,
+ui.registration_date  ,
+hq.common_medication  ,
+hq.name  ,
+hq.exercise_frequency  ,
+ui.phone_number  ,
+hq.residence  ,
+hq.chronic_disease  ,
+hq.age  ,
+hq.diet_preference  ,
+ui.username  
+
+
+        FROM health_questionnaire hq
+        left join user_info ui on hq.user_info_user_info_id_1 = ui.user_info_id
+
+
+
+        where hq.health_questionnaire_id = #{id}
+        </select>
+
+<select id="selectCount" resultType="java.lang.Long">
+select
+count(*)
+
+
+
+FROM health_questionnaire hq
+left join user_info ui on hq.user_info_user_info_id_1 = ui.user_info_id
+
+
+
+${ew.customSqlSegment}
+
+
+        </select>
+
+        </mapper>

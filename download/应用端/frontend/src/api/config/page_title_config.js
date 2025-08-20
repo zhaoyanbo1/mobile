@@ -1,0 +1,1 @@
+export default		{"health_questionnaire_update":"健康问卷填写","calendar":"日历","diet_recommendation_detail":"食谱详情","calendar_edit_reminder":"编辑提醒事项","profile":"个人","calendar_add_reminder":"添加提醒事项","recommend":"推荐","login":"登录页","ai_chat":"AI对话","activity_recommendation_detail":"活动详情","home":"首页"}

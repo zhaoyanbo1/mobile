@@ -1,0 +1,31 @@
+export const dynamicTabBars =[  {
+    url: "/pagesA/home/index",
+    text: "home",
+    icon: "https://www.codeflying.net/preview/icon/home.png",
+    onicon: "https://www.codeflying.net/preview/icon/select_home.png",
+    title: "首页"
+  },   {
+    url: "/pagesA/calendar/index",
+    text: "calendar",
+    icon: "https://www.codeflying.net/preview/icon/apps.png",
+    onicon: "https://www.codeflying.net/preview/icon/select_apps.png",
+    title: "日历"
+  },   {
+    url: "/pagesA/recommend/index",
+    text: "recommend",
+    icon: "https://www.codeflying.net/preview/icon/notes.png",
+    onicon: "https://www.codeflying.net/preview/icon/select_notes.png",
+    title: "推荐"
+  },   {
+    url: "/pagesA/ai_chat/index",
+    text: "ai_chat",
+    icon: "https://www.codeflying.net/preview/icon/nav.png",
+    onicon: "https://www.codeflying.net/preview/icon/select_nav.png",
+    title: "AI对话"
+  },   {
+    url: "/pagesA/profile/index",
+    text: "profile",
+    icon: "https://www.codeflying.net/preview/icon/contact.png",
+    onicon: "https://www.codeflying.net/preview/icon/select_contact.png",
+    title: "个人"
+  }]

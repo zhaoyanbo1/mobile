@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.ReminderItemAllMapper">
+
+
+        <resultMap id="selectListNewMap" type="com.kuafu.web.entity.ReminderItemAll">
+            <result property="userInfoUserInfoId1"  column="user_info_user_info_id_1"  />
+            <result property="medicinePhotoResourceKey"  column="medicine_photo_resource_key"  />
+            <result property="locationAddress"  column="location_address"  />
+            <result property="medicineDosage"  column="medicine_dosage"  />
+            <result property="lastLoginDate"  column="last_login_date"  />
+            <result property="dietRecipeId"  column="diet_recipe_id"  />
+            <result property="phoneNumber"  column="phone_number"  />
+            <result property="description"  column="description"  />
+            <result property="locationLongitude"  column="location_longitude"  />
+            <result property="registrationDate"  column="registration_date"  />
+            <result property="reminderItemId"  column="reminder_item_id"  />
+            <result property="title"  column="title"  />
+            <result property="reminderTime"  column="reminder_time"  />
+            <result property="isCompleted"  column="is_completed"  />
+            <result property="locationLatitude"  column="location_latitude"  />
+            <result property="password"  column="password"  />
+            <result property="creationTime"  column="creation_time"  />
+            <result property="updateTime"  column="update_time"  />
+            <result property="reminderTypeEnumId"  column="reminder_type_enum_id"  />
+            <result property="username"  column="username"  />
+            <collection property="medicinePhoto" ofType="com.kuafu.common.domin.StaticResource">
+                <id property="resourceId" column="medicine_photo_resource_id"/>
+                <result property="resourceName" column="medicine_photo_resource_name"/>
+                <result property="resourcePath" column="medicine_photo_resource_path"/>
+                <result property="relatedTableName" column="medicine_photo_related_table_name"/>
+                <result property="relatedTableKey" column="medicine_photo_related_table_key"/>
+                <result property="relateTableColumnName" column="medicine_photo_relate_table_column_name"/>
+            </collection>
+        </resultMap>
+
+        <select id="selectList" resultMap="selectListNewMap">
+        select
+        ri.user_info_user_info_id_1   ,
+        ri.medicine_photo_resource_key   ,
+        ri.location_address   ,
+        ri.medicine_dosage   ,
+        ui.last_login_date   ,
+        ri.diet_recipe_id   ,
+        ui.phone_number   ,
+        ri.description   ,
+        ri.location_longitude   ,
+        ui.registration_date   ,
+        ri.reminder_item_id   ,
+        ri.title   ,
+        ri.reminder_time   ,
+        ri.is_completed   ,
+        ri.location_latitude   ,
+        ui.password   ,
+        ri.creation_time   ,
+        ri.update_time   ,
+        ri.reminder_type_enum_id   ,
+        ui.username   
+
+        ,medicine_photo.resource_id as  medicine_photo_resource_id
+        ,medicine_photo.resource_name as medicine_photo_resource_name
+        ,medicine_photo.resource_path as  medicine_photo_resource_path
+        ,medicine_photo.related_table_name as  medicine_photo_related_table_name
+        ,medicine_photo.related_table_key as  medicine_photo_related_table_key
+        ,medicine_photo.relate_table_column_name as medicine_photo_relate_table_column_name
+
+        FROM reminder_item ri
+            left join user_info ui on ri.user_info_user_info_id_1 = ui.user_info_id
+        left join
+        (select resource_id,
+        resource_name,
+        resource_path,
+        related_table_name,
+        related_table_key,
+        relate_table_column_name
+        from static_resources
+        where related_table_name='reminder_item' and relate_table_column_name='medicine_photo'
+        ) as medicine_photo on medicine_photo.related_table_key=ri.reminder_item_id
+
+${ew.customSqlSegment}
+        </select>
+
+        <select id="selectPage" resultMap="selectListNewMap">
+        select
+        ri.user_info_user_info_id_1   ,
+        ri.medicine_photo_resource_key   ,
+        ri.location_address   ,
+        ri.medicine_dosage   ,
+        ui.last_login_date   ,
+        ri.diet_recipe_id   ,
+        ui.phone_number   ,
+        ri.description   ,
+        ri.location_longitude   ,
+        ui.registration_date   ,
+        ri.reminder_item_id   ,
+        ri.title   ,
+        ri.reminder_time   ,
+        ri.is_completed   ,
+        ri.location_latitude   ,
+        ui.password   ,
+        ri.creation_time   ,
+        ri.update_time   ,
+        ri.reminder_type_enum_id   ,
+        ui.username   
+
+        ,medicine_photo.resource_id as  medicine_photo_resource_id
+        ,medicine_photo.resource_name as medicine_photo_resource_name
+        ,medicine_photo.resource_path as  medicine_photo_resource_path
+        ,medicine_photo.related_table_name as  medicine_photo_related_table_name
+        ,medicine_photo.related_table_key as  medicine_photo_related_table_key
+        ,medicine_photo.relate_table_column_name as medicine_photo_relate_table_column_name
+
+        FROM reminder_item ri
+        left join user_info ui on ri.user_info_user_info_id_1 = ui.user_info_id
+        left join
+        (select resource_id,
+        resource_name,
+        resource_path,
+        related_table_name,
+        related_table_key,
+        relate_table_column_name
+        from static_resources
+        where related_table_name='reminder_item' and relate_table_column_name='medicine_photo'
+        ) as medicine_photo on medicine_photo.related_table_key=ri.reminder_item_id
+
+        ${ew.customSqlSegment}
+        </select>
+
+        <select id="selectById" resultMap="selectListNewMap">
+        select
+        ri.user_info_user_info_id_1   ,
+        ri.medicine_photo_resource_key   ,
+        ri.location_address   ,
+        ri.medicine_dosage   ,
+        ui.last_login_date   ,
+        ri.diet_recipe_id   ,
+        ui.phone_number   ,
+        ri.description   ,
+        ri.location_longitude   ,
+        ui.registration_date   ,
+        ri.reminder_item_id   ,
+        ri.title   ,
+        ri.reminder_time   ,
+        ri.is_completed   ,
+        ri.location_latitude   ,
+        ui.password   ,
+        ri.creation_time   ,
+        ri.update_time   ,
+        ri.reminder_type_enum_id   ,
+        ui.username   
+
+        ,medicine_photo.resource_id as  medicine_photo_resource_id
+        ,medicine_photo.resource_name as medicine_photo_resource_name
+        ,medicine_photo.resource_path as  medicine_photo_resource_path
+        ,medicine_photo.related_table_name as  medicine_photo_related_table_name
+        ,medicine_photo.related_table_key as  medicine_photo_related_table_key
+        ,medicine_photo.relate_table_column_name as medicine_photo_relate_table_column_name
+
+        FROM reminder_item ri
+        left join user_info ui on ri.user_info_user_info_id_1 = ui.user_info_id
+        left join
+        (select resource_id,
+        resource_name,
+        resource_path,
+        related_table_name,
+        related_table_key,
+        relate_table_column_name
+        from static_resources
+        where related_table_name='reminder_item' and relate_table_column_name='medicine_photo'
+        ) as medicine_photo on medicine_photo.related_table_key=ri.reminder_item_id
+
+        where ri.reminder_item_id = #{id}
+        </select>
+
+
+</mapper>

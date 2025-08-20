@@ -1,0 +1,112 @@
+{
+    "easycom": {
+        "autoscan": true,
+        "custom": {
+            "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
+"fui-(.*)": "firstui-uni/firstui/fui-$1/fui-$1.vue","^base-(.*)": "@/components/base-$1.vue"        }
+    },
+    "pages": [{
+        "path": "pages/login/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "pages/web_view/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }] ,
+"subPackages":[{"root": "pagesA",
+"pages":[{
+        "path": "activity_recommendation_detail/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "ai_chat/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "calendar/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "calendar_add_reminder/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "calendar_edit_reminder/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "diet_recommendation_detail/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "health_questionnaire_update/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "home/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "profile/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }, {
+        "path": "recommend/index",
+        "style":  {
+                "navigationBarTitleText": "",
+                "navigationStyle": "default",
+"enableShareAppMessage": true,
+"enableShareTimeline": true
+            }
+    }]}],    "globalStyle": {
+        "navigationBarTextStyle": "black",
+        "navigationBarTitleText": "uni-app",
+        "navigationBarBackgroundColor": "#F8F8F8",
+        "backgroundColor": "#F8F8F8"
+    }
+}

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.SystemSettingsAllMapper">
+
+
+        <select id="selectList" resultType="com.kuafu.web.entity.SystemSettingsAll">
+            select
+            ss.user_info_user_info_id_1   ,
+            ui.password   ,
+            ss.reminder_volume   ,
+            ui.last_login_date   ,
+            ui.phone_number   ,
+            ss.font_size   ,
+            ss.system_settings_id   ,
+            ui.registration_date   ,
+            ss.questionnaire_exported   ,
+            ui.username   
+            FROM system_settings ss
+                left join user_info ui on ss.user_info_user_info_id_1 = ui.user_info_id
+            ${ew.customSqlSegment}
+        </select>
+
+        <select id="selectPage" resultType="com.kuafu.web.entity.SystemSettingsAll">
+            select
+            ss.user_info_user_info_id_1  ,
+            ui.password  ,
+            ss.reminder_volume  ,
+            ui.last_login_date  ,
+            ui.phone_number  ,
+            ss.font_size  ,
+            ss.system_settings_id  ,
+            ui.registration_date  ,
+            ss.questionnaire_exported  ,
+            ui.username  
+            FROM system_settings ss
+                left join user_info ui on ss.user_info_user_info_id_1 = ui.user_info_id
+            ${ew.customSqlSegment}
+        </select>
+
+        <select id="selectById" resultType="com.kuafu.web.entity.SystemSettingsAll">
+            select
+            ss.user_info_user_info_id_1  ,
+            ui.password  ,
+            ss.reminder_volume  ,
+            ui.last_login_date  ,
+            ui.phone_number  ,
+            ss.font_size  ,
+            ss.system_settings_id  ,
+            ui.registration_date  ,
+            ss.questionnaire_exported  ,
+            ui.username  
+            FROM system_settings ss
+                left join user_info ui on ss.user_info_user_info_id_1 = ui.user_info_id
+            where ss.system_settings_id = #{id}
+        </select>
+
+
+</mapper>

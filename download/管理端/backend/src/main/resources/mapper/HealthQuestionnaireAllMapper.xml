@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.HealthQuestionnaireAllMapper">
+
+
+        <select id="selectList" resultType="com.kuafu.web.entity.HealthQuestionnaireAll">
+            select
+            hq.user_info_user_info_id_1   ,
+            hq.health_questionnaire_id   ,
+            ui.last_login_date   ,
+            ui.phone_number   ,
+            ui.registration_date   ,
+            hq.version   ,
+            hq.chronic_disease   ,
+            hq.common_medication   ,
+            hq.exercise_frequency   ,
+            ui.password   ,
+            hq.allergy_history   ,
+            hq.name   ,
+            hq.diet_preference   ,
+            hq.creation_time   ,
+            hq.residence   ,
+            hq.update_time   ,
+            hq.age   ,
+            ui.username   
+            FROM health_questionnaire hq
+                left join user_info ui on hq.user_info_user_info_id_1 = ui.user_info_id
+            ${ew.customSqlSegment}
+        </select>
+
+        <select id="selectPage" resultType="com.kuafu.web.entity.HealthQuestionnaireAll">
+            select
+            hq.user_info_user_info_id_1  ,
+            hq.health_questionnaire_id  ,
+            ui.last_login_date  ,
+            ui.phone_number  ,
+            ui.registration_date  ,
+            hq.version  ,
+            hq.chronic_disease  ,
+            hq.common_medication  ,
+            hq.exercise_frequency  ,
+            ui.password  ,
+            hq.allergy_history  ,
+            hq.name  ,
+            hq.diet_preference  ,
+            hq.creation_time  ,
+            hq.residence  ,
+            hq.update_time  ,
+            hq.age  ,
+            ui.username  
+            FROM health_questionnaire hq
+                left join user_info ui on hq.user_info_user_info_id_1 = ui.user_info_id
+            ${ew.customSqlSegment}
+        </select>
+
+        <select id="selectById" resultType="com.kuafu.web.entity.HealthQuestionnaireAll">
+            select
+            hq.user_info_user_info_id_1  ,
+            hq.health_questionnaire_id  ,
+            ui.last_login_date  ,
+            ui.phone_number  ,
+            ui.registration_date  ,
+            hq.version  ,
+            hq.chronic_disease  ,
+            hq.common_medication  ,
+            hq.exercise_frequency  ,
+            ui.password  ,
+            hq.allergy_history  ,
+            hq.name  ,
+            hq.diet_preference  ,
+            hq.creation_time  ,
+            hq.residence  ,
+            hq.update_time  ,
+            hq.age  ,
+            ui.username  
+            FROM health_questionnaire hq
+                left join user_info ui on hq.user_info_user_info_id_1 = ui.user_info_id
+            where hq.health_questionnaire_id = #{id}
+        </select>
+
+
+</mapper>

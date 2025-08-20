@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.UserInfoStatisticsMapper">
+
+    <resultMap id="user_info_registration_date_datetime_statistic_e1bf3d5d_countStatistic0" type="com.kuafu.web.entity.UserInfoRegistrationDateDatetimeStatisticE1bf3d5dCount$Statistic0">
+        <result property="registrationDate" column="registration_date"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="user_info_registration_date_datetime_statistic_683a2401_countStatistic0" type="com.kuafu.web.entity.UserInfoRegistrationDateDatetimeStatistic683a2401Count$Statistic0">
+        <result property="registrationDate" column="registration_date"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="user_info_registration_date_datetime_statistic_1e61d94d_countStatistic0" type="com.kuafu.web.entity.UserInfoRegistrationDateDatetimeStatistic1e61d94dCount$Statistic0">
+        <result property="registrationDate" column="registration_date"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="user_info_last_login_date_datetime_statistic_10ddf510_countStatistic0" type="com.kuafu.web.entity.UserInfoLastLoginDateDatetimeStatistic10ddf510Count$Statistic0">
+        <result property="lastLoginDate" column="last_login_date"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="user_info_last_login_date_datetime_statistic_65a6ff33_countStatistic0" type="com.kuafu.web.entity.UserInfoLastLoginDateDatetimeStatistic65a6ff33Count$Statistic0">
+        <result property="lastLoginDate" column="last_login_date"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="user_info_last_login_date_datetime_statistic_d6db3a40_countStatistic0" type="com.kuafu.web.entity.UserInfoLastLoginDateDatetimeStatisticD6db3a40Count$Statistic0">
+        <result property="lastLoginDate" column="last_login_date"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+
+
+
+    <select id="user_info_registration_date_datetime_statistic_e1bf3d5d_count" resultMap="user_info_registration_date_datetime_statistic_e1bf3d5d_countStatistic0">
+        select
+                ui.registration_date  
+                ,  count(ui.user_info_id)
+ as result_kf
+        FROM user_info ui
+
+        ${ew.customSqlSegment}
+        group by 
+            ui.registration_date
+    </select>
+
+
+    <select id="user_info_registration_date_datetime_statistic_683a2401_count" resultMap="user_info_registration_date_datetime_statistic_683a2401_countStatistic0">
+        select
+                ui.registration_date  
+                ,  count(ui.user_info_id)
+ as result_kf
+        FROM user_info ui
+
+        ${ew.customSqlSegment}
+        group by 
+            ui.registration_date
+    </select>
+
+
+    <select id="user_info_registration_date_datetime_statistic_1e61d94d_count" resultMap="user_info_registration_date_datetime_statistic_1e61d94d_countStatistic0">
+        select
+                ui.registration_date  
+                ,  count(ui.user_info_id)
+ as result_kf
+        FROM user_info ui
+
+        ${ew.customSqlSegment}
+        group by 
+            ui.registration_date
+    </select>
+
+
+    <select id="user_info_last_login_date_datetime_statistic_10ddf510_count" resultMap="user_info_last_login_date_datetime_statistic_10ddf510_countStatistic0">
+        select
+                ui.last_login_date  
+                ,  count(ui.user_info_id)
+ as result_kf
+        FROM user_info ui
+
+        ${ew.customSqlSegment}
+        group by 
+            ui.last_login_date
+    </select>
+
+
+    <select id="user_info_last_login_date_datetime_statistic_65a6ff33_count" resultMap="user_info_last_login_date_datetime_statistic_65a6ff33_countStatistic0">
+        select
+                ui.last_login_date  
+                ,  count(ui.user_info_id)
+ as result_kf
+        FROM user_info ui
+
+        ${ew.customSqlSegment}
+        group by 
+            ui.last_login_date
+    </select>
+
+
+    <select id="user_info_last_login_date_datetime_statistic_d6db3a40_count" resultMap="user_info_last_login_date_datetime_statistic_d6db3a40_countStatistic0">
+        select
+                ui.last_login_date  
+                ,  count(ui.user_info_id)
+ as result_kf
+        FROM user_info ui
+
+        ${ew.customSqlSegment}
+        group by 
+            ui.last_login_date
+    </select>
+
+
+
+</mapper>

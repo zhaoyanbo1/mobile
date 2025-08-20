@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.ReminderItemStatisticsMapper">
+
+    <resultMap id="reminder_item_statistic_faff4c4a_countStatistic0" type="com.kuafu.web.entity.ReminderItemStatisticFaff4c4aCount$Statistic0">
+        <result property="userInfoUserInfoId1" column="user_info_user_info_id_1"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_statistic_815d0c5c_countStatistic0" type="com.kuafu.web.entity.ReminderItemStatistic815d0c5cCount$Statistic0">
+        <result property="userInfoUserInfoId1" column="user_info_user_info_id_1"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_statistic_ecf332eb_countStatistic0" type="com.kuafu.web.entity.ReminderItemStatisticEcf332ebCount$Statistic0">
+        <result property="userInfoUserInfoId1" column="user_info_user_info_id_1"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_reminder_type_enum_id_status_statistic_8519936e_countStatistic0" type="com.kuafu.web.entity.ReminderItemReminderTypeEnumIdStatusStatistic8519936eCount$Statistic0">
+        <result property="reminderTypeEnumId" column="reminder_type_enum_id"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_reminder_type_enum_id_status_statistic_f101bdc9_countStatistic0" type="com.kuafu.web.entity.ReminderItemReminderTypeEnumIdStatusStatisticF101bdc9Count$Statistic0">
+        <result property="reminderTypeEnumId" column="reminder_type_enum_id"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_reminder_type_enum_id_status_statistic_3156c6a1_countStatistic0" type="com.kuafu.web.entity.ReminderItemReminderTypeEnumIdStatusStatistic3156c6a1Count$Statistic0">
+        <result property="reminderTypeEnumId" column="reminder_type_enum_id"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_reminder_time_datetime_statistic_014c5c7f_countStatistic0" type="com.kuafu.web.entity.ReminderItemReminderTimeDatetimeStatistic014c5c7fCount$Statistic0">
+        <result property="reminderTime" column="reminder_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_reminder_time_datetime_statistic_79feb197_countStatistic0" type="com.kuafu.web.entity.ReminderItemReminderTimeDatetimeStatistic79feb197Count$Statistic0">
+        <result property="reminderTime" column="reminder_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_reminder_time_datetime_statistic_9a48df92_countStatistic0" type="com.kuafu.web.entity.ReminderItemReminderTimeDatetimeStatistic9a48df92Count$Statistic0">
+        <result property="reminderTime" column="reminder_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_creation_time_datetime_statistic_38c19f01_countStatistic0" type="com.kuafu.web.entity.ReminderItemCreationTimeDatetimeStatistic38c19f01Count$Statistic0">
+        <result property="creationTime" column="creation_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_creation_time_datetime_statistic_b3b9e5e7_countStatistic0" type="com.kuafu.web.entity.ReminderItemCreationTimeDatetimeStatisticB3b9e5e7Count$Statistic0">
+        <result property="creationTime" column="creation_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_creation_time_datetime_statistic_4d13935a_countStatistic0" type="com.kuafu.web.entity.ReminderItemCreationTimeDatetimeStatistic4d13935aCount$Statistic0">
+        <result property="creationTime" column="creation_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_update_time_datetime_statistic_221f7169_countStatistic0" type="com.kuafu.web.entity.ReminderItemUpdateTimeDatetimeStatistic221f7169Count$Statistic0">
+        <result property="updateTime" column="update_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_update_time_datetime_statistic_6dbe4d85_countStatistic0" type="com.kuafu.web.entity.ReminderItemUpdateTimeDatetimeStatistic6dbe4d85Count$Statistic0">
+        <result property="updateTime" column="update_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+<resultMap id="reminder_item_update_time_datetime_statistic_361033c3_countStatistic0" type="com.kuafu.web.entity.ReminderItemUpdateTimeDatetimeStatistic361033c3Count$Statistic0">
+        <result property="updateTime" column="update_time"/>
+        <result property="result_kf" column="result_kf"/>
+    </resultMap>
+
+
+
+    <select id="reminder_item_statistic_faff4c4a_count" resultMap="reminder_item_statistic_faff4c4a_countStatistic0">
+        select
+                ri.user_info_user_info_id_1  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.user_info_user_info_id_1
+    </select>
+
+
+    <select id="reminder_item_statistic_815d0c5c_count" resultMap="reminder_item_statistic_815d0c5c_countStatistic0">
+        select
+                ri.user_info_user_info_id_1  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.user_info_user_info_id_1
+    </select>
+
+
+    <select id="reminder_item_statistic_ecf332eb_count" resultMap="reminder_item_statistic_ecf332eb_countStatistic0">
+        select
+                ri.user_info_user_info_id_1  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.user_info_user_info_id_1
+    </select>
+
+
+    <select id="reminder_item_reminder_type_enum_id_status_statistic_8519936e_count" resultMap="reminder_item_reminder_type_enum_id_status_statistic_8519936e_countStatistic0">
+        select
+                ri.reminder_type_enum_id  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.reminder_type_enum_id
+    </select>
+
+
+    <select id="reminder_item_reminder_type_enum_id_status_statistic_f101bdc9_count" resultMap="reminder_item_reminder_type_enum_id_status_statistic_f101bdc9_countStatistic0">
+        select
+                ri.reminder_type_enum_id  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.reminder_type_enum_id
+    </select>
+
+
+    <select id="reminder_item_reminder_type_enum_id_status_statistic_3156c6a1_count" resultMap="reminder_item_reminder_type_enum_id_status_statistic_3156c6a1_countStatistic0">
+        select
+                ri.reminder_type_enum_id  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.reminder_type_enum_id
+    </select>
+
+
+    <select id="reminder_item_reminder_time_datetime_statistic_014c5c7f_count" resultMap="reminder_item_reminder_time_datetime_statistic_014c5c7f_countStatistic0">
+        select
+                ri.reminder_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.reminder_time
+    </select>
+
+
+    <select id="reminder_item_reminder_time_datetime_statistic_79feb197_count" resultMap="reminder_item_reminder_time_datetime_statistic_79feb197_countStatistic0">
+        select
+                ri.reminder_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.reminder_time
+    </select>
+
+
+    <select id="reminder_item_reminder_time_datetime_statistic_9a48df92_count" resultMap="reminder_item_reminder_time_datetime_statistic_9a48df92_countStatistic0">
+        select
+                ri.reminder_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.reminder_time
+    </select>
+
+
+    <select id="reminder_item_creation_time_datetime_statistic_38c19f01_count" resultMap="reminder_item_creation_time_datetime_statistic_38c19f01_countStatistic0">
+        select
+                ri.creation_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.creation_time
+    </select>
+
+
+    <select id="reminder_item_creation_time_datetime_statistic_b3b9e5e7_count" resultMap="reminder_item_creation_time_datetime_statistic_b3b9e5e7_countStatistic0">
+        select
+                ri.creation_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.creation_time
+    </select>
+
+
+    <select id="reminder_item_creation_time_datetime_statistic_4d13935a_count" resultMap="reminder_item_creation_time_datetime_statistic_4d13935a_countStatistic0">
+        select
+                ri.creation_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.creation_time
+    </select>
+
+
+    <select id="reminder_item_update_time_datetime_statistic_221f7169_count" resultMap="reminder_item_update_time_datetime_statistic_221f7169_countStatistic0">
+        select
+                ri.update_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.update_time
+    </select>
+
+
+    <select id="reminder_item_update_time_datetime_statistic_6dbe4d85_count" resultMap="reminder_item_update_time_datetime_statistic_6dbe4d85_countStatistic0">
+        select
+                ri.update_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.update_time
+    </select>
+
+
+    <select id="reminder_item_update_time_datetime_statistic_361033c3_count" resultMap="reminder_item_update_time_datetime_statistic_361033c3_countStatistic0">
+        select
+                ri.update_time  
+                ,  count(ri.reminder_item_id)
+ as result_kf
+        FROM reminder_item ri
+
+        ${ew.customSqlSegment}
+        group by 
+            ri.update_time
+    </select>
+
+
+
+</mapper>
