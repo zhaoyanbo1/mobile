@@ -1,97 +1,259 @@
 <template>
-  <base-layout>
-    <view class="flex flex-col h-full p-4 bg-neutral-50">
-      <!-- 消息列表 -->
-      <scroll-view scroll-y class="flex-1 mb-4" :scroll-top="scrollTop" @scrolltolower="scrollToLower">
-        <view v-for="(msg, index) in messages" :key="index" class="mb-3 flex" :class="msg.isUser ? 'justify-end' : 'justify-start'">
-          <view class="flex items-end max-w-3/4">
-            <image
-              :src="msg.isUser ? userAvatar : aiAvatar"
-              mode="aspectFill"
-              class="w-10 h-10 rounded-full mr-2"
-            />
-            <view :class="['rounded-xl p-3', msg.isUser ? 'bg-primary-500 text-white' : 'bg-white text-neutral-900 shadow']">
-              <text class="block font-semibold mb-1">{{ msg.isUser ? userName : aiName }}</text>
-              <text class="whitespace-pre-wrap break-words">{{ msg.content }}</text>
-            </view>
-          </view>
-        </view>
-      </scroll-view>
+  <div class="chat-wrap">
+    <!-- 顶部栏 -->
+    <header class="topbar">
+      <button class="back" @click="goBack" aria-label="Back">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">Chat</div>
+      <div class="spacer"></div>
+    </header>
 
-      <!-- 输入框区域 -->
-      <view class="flex items-center">
-        <uni-easyinput
-          v-model="inputMessage"
-          type="text"
-          placeholder="请输入消息"
-          class="flex-1 box-border rounded-xl border border-neutral-300 px-4 py-2 mr-2"
-          @change="onInputChange"
-          @confirm="sendMessage"
-        />
-        <button
-          class="bg-primary-500 text-white rounded-full px-6 py-2"
-          :disabled="inputMessage.trim() === ''"
-          @click="sendMessage"
-        >
-          发送
-        </button>
-      </view>
-    </view>
-  </base-layout>
+    <!-- 消息区 -->
+    <main ref="scrollRef" class="messages">
+      <div v-for="(m,i) in messages" :key="i" class="row" :class="m.role">
+        <template v-if="m.role === 'assistant'">
+          <img class="avatar" :src="avatarUrl" alt="assistant" />
+          <div class="bubble assistant-bubble">{{ m.text }}</div>
+        </template>
+        <template v-else>
+          <div class="bubble user-bubble">{{ m.text }}</div>
+        </template>
+      </div>
+
+      <!-- 正在流式生成时的临时气泡 -->
+      <div v-if="streamingChunk" class="row assistant">
+        <img class="avatar" :src="avatarUrl" alt="assistant" />
+        <div class="bubble assistant-bubble">{{ streamingChunk }}</div>
+      </div>
+    </main>
+
+    <!-- 底部输入栏 -->
+    <footer class="composer">
+      <button class="tool-btn" title="Camera" aria-label="Camera">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 7h3l2-2h6l2 2h3v12H4z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+      <input
+          class="input"
+          v-model="input"
+          :disabled="loading"
+          placeholder="Type a message..."
+          @keydown.enter.exact.prevent="send"
+      />
+      <button class="tool-btn" title="Voice" aria-label="Voice">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 11a7 7 0 0 1-14 0M12 19v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="send-btn" :disabled="loading || !input.trim()" @click="send">Send</button>
+    </footer>
+  </div>
 </template>
 
 <script setup>
-const { proxy } = getCurrentInstance();
+import {ref, nextTick, onBeforeUnmount} from 'vue'
 
-const messages = ref([]);
-const inputMessage = ref('');
-const scrollTop = ref(0);
+// 头像：随便用一张本地图、CDN、或 emoji 占位
+const avatarUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9d1-1f3fb-200d-1f9af.svg'
 
-const userName = '用户';
-const aiName = 'AI助手';
-const userAvatar = 'https://www.codeflying.net/preview/kitty-family.jpg';
-const aiAvatar = 'https://www.codeflying.net/preview/ai-robot.jpg';
+const input = ref('')
+const messages = ref([
+  // 可选：默认欢迎语
+  // { role: 'assistant', text: 'Hi! Ask me anything.' }
+])
+const streamingChunk = ref('')
+const loading = ref(false)
+const scrollRef = ref(null)
+let es = null
 
-// 发送消息
-function sendMessage() {
-  const content = inputMessage.value.trim();
-  if (!content) return;
-
-  // 用户消息入队
-  messages.value.push({ content, isUser: true });
-  inputMessage.value = '';
-  updateScroll();
-
-  // AI回复固定示例文本
-  setTimeout(() => {
-    messages.value.push({
-      content: '您好，我是AI助手，很高兴为您服务！这是一个示例回复。',
-      isUser: false
-    });
-    updateScroll();
-  }, 800);
+const autoScroll = async () => {
+  await nextTick()
+  const el = scrollRef.value
+  if (el) el.scrollTop = el.scrollHeight
 }
 
-// 输入框内容变化
-function onInputChange(e) {
-  inputMessage.value = e.detail.value;
+const stopStream = () => {
+  if (es) {
+    es.close()
+    es = null
+  }
+  loading.value = false
 }
 
-// 更新滚动位置
-function updateScroll() {
-  // 滚动到底部
-  scrollTop.value = 99999999;
+const send = () => {
+  const q = input.value.trim()
+  if (!q || loading.value) return
+
+  // 推入用户消息
+  messages.value.push({role: 'user', text: q})
+  input.value = ''
+  streamingChunk.value = ''
+  loading.value = true
+  autoScroll()
+
+  // 连接你的后端 SSE：/api/llm/stream?q=...
+  es = new EventSource(`/api/llm/stream?q=${encodeURIComponent(q)}`)
+  es.onmessage = (e) => {
+    if (e.data === '[DONE]') {
+      // 把临时流式片段落入最终消息
+      if (streamingChunk.value) {
+        messages.value.push({role: 'assistant', text: streamingChunk.value})
+        streamingChunk.value = ''
+      }
+      stopStream()
+      autoScroll()
+      return
+    }
+    streamingChunk.value += e.data
+    autoScroll()
+  }
+  es.onerror = () => {
+    stopStream()
+  }
 }
 
-// 滚动到底部事件处理
-function scrollToLower() {
-  updateScroll();
+const goBack = () => {
+  // 如果你在路由里，用下面这句；否则留空或自定义
+  history.length > 1 ? history.back() : null
 }
 
-// 页面加载时初始化消息列表为空
-onLoad(() => {
-  messages.value = [];
-  inputMessage.value = '';
-  scrollTop.value = 0;
-});
+onBeforeUnmount(() => stopStream())
 </script>
+
+<style scoped>
+:root {
+  color-scheme: light;
+}
+
+.chat-wrap {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 56px 1fr auto;
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+/* 顶部栏 */
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid #f1f1f1;
+  background: #fff;
+}
+
+.topbar .back {
+  border: none;
+  background: transparent;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.topbar .title {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+}
+
+.topbar .spacer {
+  width: 32px;
+}
+
+/* 消息列表 */
+.messages {
+  overflow-y: auto;
+  padding: 12px 14px 90px;
+  background: #fafafa;
+}
+
+.row {
+  display: flex;
+  margin: 8px 0;
+}
+
+.row.assistant {
+  align-items: flex-start;
+}
+
+.row.user {
+  justify-content: flex-end;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .05);
+}
+
+.bubble {
+  max-width: 78%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  color: #fff;
+  font-weight: 600;
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.35;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .06);
+}
+
+.assistant-bubble {
+  background: #3b4452;
+  border-top-left-radius: 8px;
+}
+
+.user-bubble {
+  background: #f0ab45;
+  border-top-right-radius: 8px;
+}
+
+/* 底部输入栏 */
+.composer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px 72px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px 16px;
+  background: rgba(245, 245, 245, .95);
+  backdrop-filter: saturate(150%) blur(6px);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+}
+
+.input {
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  padding: 0 12px;
+  outline: none;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #eee;
+}
+
+.tool-btn, .send-btn {
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-btn:disabled, .send-btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.send-btn {
+  background: #111827;
+  color: #fff;
+  font-weight: 600;
+}
+</style>

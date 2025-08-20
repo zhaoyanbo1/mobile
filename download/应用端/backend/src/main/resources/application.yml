@@ -111,5 +111,9 @@ ocr:
   type: local
   tessdata: ${OCR_TESSDATA:tessdata}
 
+openai:
+  apiKey: ${OPENAI_API_KEY}     # 建议用环境变量注入，避免写死
+  baseUrl: https://api.openai.com
+  model: gpt-5
 
 

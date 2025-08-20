@@ -14,22 +14,40 @@ import java.util.Date;
  *
  * @author kuafu
  */
+//@Configuration
+//public class CorsConfig implements WebMvcConfigurer {
+//    @Override
+//    public void addFormatters(FormatterRegistry registry) {
+//        registry.addConverter(new StringToDateConverter());
+//    }
+//    @Override
+//    public void addCorsMappings(CorsRegistry registry) {
+//        // 覆盖所有请求
+//        registry.addMapping("/**")
+//                // 允许发送 Cookie
+//                .allowCredentials(true)
+//                // 放行哪些域名（必须用 patterns，否则 * 会和 allowCredentials 冲突）
+//                .allowedOriginPatterns("*")
+//                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+//                .allowedHeaders("*")
+//                .exposedHeaders("*");
+//    }
+//}
+import org.springframework.context.annotation.Bean;
 @Configuration
-public class CorsConfig implements WebMvcConfigurer {
-    @Override
-    public void addFormatters(FormatterRegistry registry) {
-        registry.addConverter(new StringToDateConverter());
-    }
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        // 覆盖所有请求
-        registry.addMapping("/**")
-                // 允许发送 Cookie
-                .allowCredentials(true)
-                // 放行哪些域名（必须用 patterns，否则 * 会和 allowCredentials 冲突）
-                .allowedOriginPatterns("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .exposedHeaders("*");
+public class CorsConfig {
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/**")  // 只开放 /api/**，更安全
+                        .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173") // 你的 Vue 开发环境端口
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+            }
+        };
     }
 }
+
