@@ -1,19 +1,27 @@
 package com.kuafu.llm.config;
 
-import com.openai.OpenAI;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
 
 @Configuration
 public class OpenAIConfig {
 
     @Bean
-    public OpenAI openAI(@Value("${openai.apiKey}") String apiKey,
-                         @Value("${openai.baseUrl:https://api.openai.com}") String baseUrl) {
-        return OpenAI.builder()
-                .apiKey(apiKey)
-                .baseUrl(baseUrl)   // 默认官方地址；如用代理可改这里
-                .build();
+    public OpenAIClient openAIClient(
+            @Value("${openai.apiKey}") String apiKey,
+            @Value("${openai.baseUrl:https://api.openai.com/v1}") String baseUrl // 可留空，默认 https://api.openai.com/v1
+    ) {
+        OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder().apiKey(apiKey);
+        if (baseUrl != null && !baseUrl.trim().isEmpty()) {
+            String url = baseUrl.endsWith("/v1")
+                    ? baseUrl
+                    : (baseUrl.endsWith("/") ? baseUrl + "v1" : baseUrl + "/v1");
+            builder.baseUrl(url);
+        }
+        return builder.build();
     }
 }

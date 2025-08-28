@@ -60,7 +60,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
 
         final Map<RequestMappingInfo, HandlerMethod> handlerMethods = requestMappingHandlerMapping.getHandlerMethods();
-
+//        http.cors().and().csrf().disable(); // ★ 开 CORS，关 CSRF（前后端分离常见做法）
 
         ExpressionUrlAuthorizationConfigurer<HttpSecurity>.ExpressionInterceptUrlRegistry registry = http
                 .cors().and()
@@ -72,13 +72,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests();
         registry
+                .antMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 .antMatchers("/doc.html").permitAll()
+                .antMatchers("/actuator/**").permitAll()
                 .antMatchers("/login/**").permitAll()
+                .antMatchers("/api/login/**").permitAll()
                 .antMatchers("/get_mp_url").permitAll()
                 .antMatchers("/getLoginUser").permitAll()
                 .antMatchers("/system/setting/login").permitAll()
+                .antMatchers("/api/system/setting/login").permitAll()
                 .antMatchers("/chatbot/**", "/difyConfig/**").permitAll()
                 .antMatchers("/common/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/llm/chat/stream").permitAll()
                 .antMatchers("/generalOrder/callback/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
                 .antMatchers("/swagger-ui.html", "/swagger-resources/**", "/webjars/**", "/*/api-docs", "/druid/**").permitAll()

@@ -1,28 +1,29 @@
 package com.kuafu.llm.service;
 
-import com.openai.OpenAI;
-import com.openai.core.Stream;
-import com.openai.models.Input;
-import com.openai.models.Responses;
+import com.openai.client.OpenAIClient;
+import com.openai.core.http.StreamResponse;
+import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseStreamEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ChatService {
-    private final OpenAI openAI;
+    private final OpenAIClient client;
 
     @Value("${openai.model:gpt-4.1-mini}")
     private String model;
 
-    public ChatService(OpenAI openAI) {
-        this.openAI = openAI;
+    public ChatService(OpenAIClient client) {
+        this.client = client;
     }
 
-    public Stream<Responses.StreamEvent> streamChat(String userMessage) {
-        return openAI.responses()
-                .stream(Responses.StreamRequest.builder()
-                        .model(model)
-                        .input(Input.ofText(userMessage))
-                        .build());
+    /** 返回 OpenAI 的流式响应，交由 Controller 写成 SSE */
+    public StreamResponse<ResponseStreamEvent> streamChat(String userMessage) {
+        ResponseCreateParams params = ResponseCreateParams.builder()
+                .model(model)               // 也可用 ChatModel.GPT_4_1_MINI 常量
+                .input(userMessage)         // 不再需要旧的 Input.ofText(...)
+                .build();
+        return client.responses().createStreaming(params);
     }
 }

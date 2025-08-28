@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit;
 import static com.kuafu.login.constant.LoginConstant.LOGIN_CACHE_PRE;
 
 @RestController
-@RequestMapping("")
+@RequestMapping({ "", "/api" })
 @Slf4j
 @ConditionalOnProperty(prefix = "login", name = "enable")
 @Api(value = "LoginController", tags = {"登陆"})

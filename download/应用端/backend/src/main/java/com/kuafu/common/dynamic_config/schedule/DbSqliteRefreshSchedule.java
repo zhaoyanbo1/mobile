@@ -29,7 +29,7 @@ public class DbSqliteRefreshSchedule {
     @Resource
     private DbConfigurationRefreshPublisher dbConfigurationRefreshPublisher;
 
-    @Scheduled
+//    @Scheduled
     @ScheduledDynamicCron(cornName = "dbconfig.refreshInterval", handler = DbRefreshConfigureScheduleCornHandler.class)
     public void refresh() {
         log.info("refresh");

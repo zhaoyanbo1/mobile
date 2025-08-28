@@ -22,11 +22,21 @@ export default defineConfig(({mode}) => {
     ],
     server: {
       host: "0.0.0.0",
+      port: 5173,
+      watch: {
+        ignored: [
+          '**/backend/target/**',
+          '**/backend/logs/**',
+          '**/target/**',
+          '**/.idea/**',
+          '**/.git/**',
+        ],
+      },
       proxy: {
         [env.VITE_APP_BASE_API]: {
           target: env.VITE_APP_SERVICE_API,
           changeOrigin: true,
-          rewrite: (path) => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), ''),
+          //rewrite: (path) => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), ''),
         },
       }
     },

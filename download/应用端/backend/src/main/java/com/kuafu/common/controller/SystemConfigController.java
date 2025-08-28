@@ -11,11 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.*;
 
 ;
 
 @RestController
-@RequestMapping("/system")
+@RequestMapping({"/system", "/api/system"})
 @Slf4j
 @Api(value = "SysConfigController", tags = {"系统配置"})
 public class SystemConfigController {
@@ -24,7 +25,9 @@ public class SystemConfigController {
 
     @GetMapping("/setting/login")
     @ApiOperation("获取系统配置")
-    public BaseResponse getConfigList() {
-        return ResultUtils.success();
+    public BaseResponse<?> getConfigList() {
+        List<?> list = Optional.ofNullable(systemConfigService.list())
+                .orElse(Collections.emptyList());
+        return ResultUtils.success(list);
     }
 }

@@ -90,7 +90,7 @@ const send = () => {
   autoScroll()
 
   // 连接你的后端 SSE：/api/llm/stream?q=...
-  es = new EventSource(`/api/llm/stream?q=${encodeURIComponent(q)}`)
+  es = new EventSource(`/api/llm/chat/stream?q=${encodeURIComponent(q)}`)
   es.onmessage = (e) => {
     if (e.data === '[DONE]') {
       // 把临时流式片段落入最终消息

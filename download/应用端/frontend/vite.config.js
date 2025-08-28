@@ -38,11 +38,24 @@ export default defineConfig(({ command, mode }) => {
         },
         server: {
             host: "0.0.0.0",
+            hmr: false,
+            watch: {
+                // 关键：忽略后端和其它不相关目录，防止触发刷新
+                ignored: [
+                    '**/backend/target/**',
+                    '**/backend/logs/**',
+                    '**/target/**',
+                    '**/.idea/**',
+                    '**/.git/**'
+                ],
+                // Windows 可保持默认；如果你在 WSL/网络盘，必要时：
+                // usePolling: true, interval: 1000
+            },
             proxy: {
                 [env.VITE_APP_BASE_API]: {
                     target: env.VITE_APP_SERVICE_API,
                     changeOrigin: true,
-                    rewrite: (path) => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), ''),
+                    //rewrite: (path) => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), ''),
                 },
             }
         },
