@@ -46,7 +46,8 @@ service.interceptors.response.use(
         } else {
             if (code === 401 || code === 403) {
                 localStorage.removeItem('token');
-                location.href = import.meta.env.VITE_BASE;
+                // location.href = `${import.meta.env.VITE_BASE}login`;
+                router.replace({ path: '/login' });
             } else {
                 ElMessage({
                     message: message || '系统出错',
@@ -62,9 +63,10 @@ service.interceptors.response.use(
         const {message} = error.response.data;
         // 未认证
         if (error.response.status === 401) {
-            localStorage.removeItem('token')
-            location.href = import.meta.env.VITE_BASE;
-        } else {
+            localStorage.removeItem('token');
+            // location.href = `${import.meta.env.VITE_BASE}login`;
+            router.replace({ path: '/login' });
+       } else {
             ElMessage({
                 message: '网络异常，请稍后再试!',
                 type: 'error',

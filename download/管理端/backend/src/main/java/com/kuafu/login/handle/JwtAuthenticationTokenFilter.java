@@ -35,4 +35,16 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         }
         chain.doFilter(request, response);
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest req) {
+        String p = req.getServletPath();
+        return p.startsWith("/actuator/")
+                || p.equals("/system/setting/login")
+                || p.equals("/api/system/setting/login")
+                || p.startsWith("/login/")
+                || p.startsWith("/api/login/")
+                || p.equals("/error") || p.startsWith("/error/")  // ★ 新增
+                || p.equals("/favicon.ico");                      // （可选）
+    }
 }

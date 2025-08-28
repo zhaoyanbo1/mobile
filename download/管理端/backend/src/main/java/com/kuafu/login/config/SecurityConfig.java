@@ -69,9 +69,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests();
 
         registry
+                .antMatchers("/error", "/error/**").permitAll()      // ★ 放行 Spring 的错误端点
+                .antMatchers("/favicon.ico").permitAll()         // （可选，防止 401 污染日志）
                 .antMatchers("/doc.html").permitAll()
                 .antMatchers("/login/**").permitAll()
+                .antMatchers("/api/login/**").permitAll()
                 .antMatchers("/system/setting/**").permitAll()
+                .antMatchers("/api/system/setting/login").permitAll()
                 .antMatchers(HttpMethod.GET, "/*.html", "/**/*.html", "/**/*.css", "/**/*.js","/profile/**").permitAll()
                 .antMatchers("/swagger-ui.html", "/swagger-resources/**", "/webjars/**", "/*/api-docs", "/druid/**").permitAll()
                 .antMatchers("/**/*.png","/**/*.jpg","/**/*.svg","/**/*.ico").permitAll()

@@ -54,6 +54,20 @@
             </exclusions>
         </dependency>
 
+        <!-- JAXB API（仍然是 javax.xml.bind 包名） -->
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>2.3.3</version>
+        </dependency>
+
+        <!-- JAXB 运行时（Glassfish 实现，带 activation 依赖） -->
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>2.3.3</version>
+        </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
