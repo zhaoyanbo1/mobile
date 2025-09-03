@@ -1,6 +1,6 @@
 import service from "@/utils/request";
 
-const BASE_API = "/api/data/invoke";
+const BASE_API = "/data/invoke";
 
 export default {
     add(params={}) {
