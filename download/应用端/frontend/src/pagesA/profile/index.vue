@@ -190,18 +190,49 @@ const fetchUserData = async () => {
 };
 
 // 获取健康数据
+// const fetchHealthData = async (userId) => {
+//   const res = await proxy.$cf.table.list({
+//     table_name: 'health_questionnaire',
+//     param: {
+//       user_info_user_info_id_1: userId
+//     },
+//     order_by: 'creation_time',
+//     // sort: 'desc',
+//     limit: 1
+//   });
+//
+//   if (res.success && res.data.length > 0) {
+//     healthData.value = res.data[0];
+//   }
+// };
+
 const fetchHealthData = async (userId) => {
   const res = await proxy.$cf.table.list({
     table_name: 'health_questionnaire',
-    param: {
-      user_info_user_info_id_1: userId
-    },
-    order: 'creation_time desc',
+    param: { user_info_user_info_id_1: userId },
+
+    // 下面这些是尽量“投喂”，如果SDK支持会生效；不支持也无妨（我们会再前端兜底）
+    order: 'health_questionnaire_id desc',
+    order_by: 'health_questionnaire_id',
+    sort: 'desc',
+    page_size: 1,
     limit: 1
   });
-  
-  if (res.success && res.data.length > 0) {
-    healthData.value = res.data[0];
+
+  if (res?.success && Array.isArray(res.data) && res.data.length) {
+    // 前端兜底：按时间/ID 进行降序挑最新一条
+    const latest = [...res.data].sort((a, b) => {
+      const tA = Date.parse(a.creation_time  || 0) || 0;
+      const tB = Date.parse(b.creation_time || 0) || 0;
+      if (tA !== tB) return tB - tA; // 时间新的在前
+      const ia = Number(a.health_questionnaire_id ?? a.id ?? 0);
+      const ib = Number(b.health_questionnaire_id ?? b.id ?? 0);
+      return ib - ia; // 再比较ID
+    })[0];
+
+    healthData.value = latest;
+  } else {
+    healthData.value = null;
   }
 };
 
