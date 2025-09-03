@@ -40,7 +40,7 @@
           placeholder="Type a message..."
           @keydown.enter.exact.prevent="send"
       />
-      <button class="tool-btn" title="Voice" aria-label="Voice">
+      <button class="tool-btn" title="Voice" aria-label="Voice" @click="toggleRecording" :class="{active: isRecording}">
         <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 11a7 7 0 0 1-14 0M12 19v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
       <button class="send-btn" :disabled="loading || !input.trim()" @click="send">Send</button>
@@ -49,10 +49,12 @@
 </template>
 
 <script setup>
-import {ref, nextTick, onBeforeUnmount} from 'vue'
+import {ref, nextTick, onBeforeUnmount, getCurrentInstance} from 'vue'
 
 // 头像：随便用一张本地图、CDN、或 emoji 占位
 const avatarUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9d1-1f3fb-200d-1f9af.svg'
+
+const { proxy } = getCurrentInstance()
 
 const input = ref('')
 const messages = ref([
@@ -64,12 +66,70 @@ const loading = ref(false)
 const scrollRef = ref(null)
 let es = null
 
+const isRecording = ref(false)
+const voiceMode = ref(false)
+let recognition = null
+
+if (typeof window !== 'undefined') {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (SR) {
+    recognition = new SR()
+    recognition.lang = 'zh-CN'
+    recognition.interimResults = false
+    recognition.continuous = false
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript
+      input.value = transcript
+      send()
+    }
+    recognition.onerror = () => {
+      isRecording.value = false
+    }
+    recognition.onend = () => {
+      isRecording.value = false
+    }
+  }
+}
+
+const toggleRecording = () => {
+  if (!recognition) {
+    proxy?.$cf?.toast?.({ message: '当前浏览器不支持语音识别', level: 'error' })
+    return
+  }
+  if (voiceMode.value) {
+    recognition.stop()
+    voiceMode.value = false
+    isRecording.value = false
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
+  } else {
+    recognition.start()
+    voiceMode.value = true
+    isRecording.value = true
+  }
+}
+
+const speak = (text) => {
+  if (!voiceMode.value || typeof window === 'undefined' || !window.speechSynthesis) return
+  const utter = new SpeechSynthesisUtterance(text)
+  utter.lang = 'zh-CN'
+  utter.onend = () => {
+    if (voiceMode.value && recognition) {
+      recognition.start()
+      isRecording.value = true
+    }
+  }
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(utter)
+}
+
+
 const autoScroll = async () => {
   await nextTick()
   const el = scrollRef.value
   if (el) el.scrollTop = el.scrollHeight
 }
-
 const stopStream = () => {
   if (es) {
     es.close()
@@ -96,6 +156,7 @@ const send = () => {
       // 把临时流式片段落入最终消息
       if (streamingChunk.value) {
         messages.value.push({role: 'assistant', text: streamingChunk.value})
+        speak(streamingChunk.value)
         streamingChunk.value = ''
       }
       stopStream()
@@ -244,6 +305,10 @@ onBeforeUnmount(() => stopStream())
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.tool-btn.active {
+  background: #fca5a5;
 }
 
 .tool-btn:disabled, .send-btn:disabled {
