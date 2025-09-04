@@ -42,7 +42,13 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")  // 只开放 /api/**，更安全
-                        .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173") // 你的 Vue 开发环境端口
+                        .allowedOriginPatterns(
+                                "http://localhost:*",
+                                "http://127.0.0.1:*",
+                                "http://192.168.*.*:*",
+                                "http://10.*.*.*:*"
+                        )
+//                        .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173") // 你的 Vue 开发环境端口
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);

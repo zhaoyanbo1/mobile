@@ -44,7 +44,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
                 || p.equals("/api/system/setting/login")
                 || p.startsWith("/login/")
                 || p.equals("/api/llm/chat/stream")
-                || p.startsWith("/api/login/");
+                || p.startsWith("/api/login/")
+                || p.equals("/api/tts/stream");
 
     }
 }

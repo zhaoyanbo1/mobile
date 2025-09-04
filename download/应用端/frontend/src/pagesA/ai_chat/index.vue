@@ -50,6 +50,7 @@
 
 <script setup>
 import {ref, nextTick, onBeforeUnmount, getCurrentInstance} from 'vue'
+import { voiceBus } from '@/voice/bus'
 
 // 头像：随便用一张本地图、CDN、或 emoji 占位
 const avatarUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9d1-1f3fb-200d-1f9af.svg'
@@ -69,6 +70,11 @@ let es = null
 const isRecording = ref(false)
 const voiceMode = ref(false)
 let recognition = null
+let currentUtteranceId = null
+
+voiceBus.on('voice:error', (_id, _code, message) => {
+  proxy?.$cf?.toast?.({ message, level: 'error' })
+})
 
 if (typeof window !== 'undefined') {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -96,13 +102,14 @@ const toggleRecording = () => {
     proxy?.$cf?.toast?.({ message: '当前浏览器不支持语音识别', level: 'error' })
     return
   }
+  voiceBus.emit('voice:stop', currentUtteranceId)
   if (voiceMode.value) {
     recognition.stop()
     voiceMode.value = false
     isRecording.value = false
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel()
-    }
+    // if (typeof window !== 'undefined' && window.speechSynthesis) {
+    //   window.speechSynthesis.cancel()
+    // }
   } else {
     recognition.start()
     voiceMode.value = true
@@ -110,19 +117,19 @@ const toggleRecording = () => {
   }
 }
 
-const speak = (text) => {
-  if (!voiceMode.value || typeof window === 'undefined' || !window.speechSynthesis) return
-  const utter = new SpeechSynthesisUtterance(text)
-  utter.lang = 'zh-CN'
-  utter.onend = () => {
-    if (voiceMode.value && recognition) {
-      recognition.start()
-      isRecording.value = true
-    }
-  }
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(utter)
-}
+// const speak = (text) => {
+//   if (!voiceMode.value || typeof window === 'undefined' || !window.speechSynthesis) return
+//   const utter = new SpeechSynthesisUtterance(text)
+//   utter.lang = 'zh-CN'
+//   utter.onend = () => {
+//     if (voiceMode.value && recognition) {
+//       recognition.start()
+//       isRecording.value = true
+//     }
+//   }
+//   window.speechSynthesis.cancel()
+//   window.speechSynthesis.speak(utter)
+// }
 
 
 const autoScroll = async () => {
@@ -149,14 +156,21 @@ const send = () => {
   loading.value = true
   autoScroll()
 
+  voiceBus.emit('voice:stop', currentUtteranceId)
+  currentUtteranceId = null
+
   // 连接你的后端 SSE：/api/llm/stream?q=...
   es = new EventSource(`/api/llm/chat/stream?q=${encodeURIComponent(q)}`)
   es.onmessage = (e) => {
     if (e.data === '[DONE]') {
       // 把临时流式片段落入最终消息
       if (streamingChunk.value) {
-        messages.value.push({role: 'assistant', text: streamingChunk.value})
-        speak(streamingChunk.value)
+        // messages.value.push({role: 'assistant', text: streamingChunk.value})
+        // speak(streamingChunk.value)
+        const finalText = streamingChunk.value
+        messages.value.push({role: 'assistant', text: finalText})
+        currentUtteranceId = Date.now().toString()
+        voiceBus.emit('voice:play', currentUtteranceId, finalText)
         streamingChunk.value = ''
       }
       stopStream()
@@ -176,7 +190,11 @@ const goBack = () => {
   history.length > 1 ? history.back() : null
 }
 
-onBeforeUnmount(() => stopStream())
+//onBeforeUnmount(() => stopStream())
+onBeforeUnmount(() => {
+  stopStream()
+  voiceBus.emit('voice:stop', currentUtteranceId)
+})
 </script>
 
 <style scoped>

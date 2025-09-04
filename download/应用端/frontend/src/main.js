@@ -8,6 +8,7 @@ import zh from '@/i18n/zh.js';
 import get_resource_url from "@/api/config/static_config";
 import wxShare from "./api/utils/wxShare";
 import AudioPlayer from '@/api/utils/audioPlayer';
+import { VoiceController } from '@/voice/VoiceController';
 
 export function createApp() {
     const lange = import.meta.env.VITE_APP_LANGE;
@@ -24,6 +25,11 @@ export function createApp() {
     app.config.globalProperties.$cf = api;
     app.config.globalProperties.get_resource_url= get_resource_url;
     app.config.globalProperties.$audioPlayer = AudioPlayer;
+
+    if (typeof window !== 'undefined') {
+        // initialize global voice controller once on the client
+        new VoiceController();
+    }
 
     app.use(i18n);
     app.mixin(wxShare)

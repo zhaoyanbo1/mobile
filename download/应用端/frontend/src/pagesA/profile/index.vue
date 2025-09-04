@@ -189,7 +189,7 @@ const fetchUserData = async () => {
   }
 };
 
-// 获取健康数据
+//获取健康数据
 // const fetchHealthData = async (userId) => {
 //   const res = await proxy.$cf.table.list({
 //     table_name: 'health_questionnaire',
@@ -235,6 +235,7 @@ const fetchHealthData = async (userId) => {
     healthData.value = null;
   }
 };
+
 
 // 获取紧急联系人
 const fetchEmergencyContacts = async (userId) => {
