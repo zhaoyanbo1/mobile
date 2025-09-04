@@ -6,7 +6,7 @@ export class VoicePlayer {
         this.queue = [];
         this.current = null;
         this.played = 0;
-        this.options = Object.assign({ prebufferMs: 400, onProgress: () => {} }, options);
+        this.options = Object.assign({ prebufferMs: 400, onProgress: () => {}, onEnd: () => {} }, options);
         this.started = false;
     }
 
@@ -30,6 +30,7 @@ export class VoicePlayer {
     _playNext() {
         if (!this.queue.length) {
             this.started = false;
+            this.options.onEnd();
             return;
         }
         const buffer = this.queue.shift();

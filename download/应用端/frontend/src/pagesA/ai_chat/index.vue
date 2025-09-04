@@ -71,9 +71,15 @@ const isRecording = ref(false)
 const voiceMode = ref(false)
 let recognition = null
 let currentUtteranceId = null
+let awaitingResponse = false
 
 voiceBus.on('voice:error', (_id, _code, message) => {
   proxy?.$cf?.toast?.({ message, level: 'error' })
+  awaitingResponse = false
+  if (voiceMode.value && recognition) {
+    recognition.start()
+    isRecording.value = true
+  }
 })
 
 if (typeof window !== 'undefined') {
@@ -86,13 +92,24 @@ if (typeof window !== 'undefined') {
     recognition.onresult = (e) => {
       const transcript = e.results[0][0].transcript
       input.value = transcript
+      if (awaitingResponse) {
+        stopStream()
+        voiceBus.emit('voice:stop', currentUtteranceId)
+        awaitingResponse = false
+      }
       send()
     }
     recognition.onerror = () => {
       isRecording.value = false
     }
     recognition.onend = () => {
-      isRecording.value = false
+      //isRecording.value = false
+      if (voiceMode.value) {
+        recognition.start()
+        isRecording.value = true
+      } else {
+        isRecording.value = false
+      }
     }
   }
 }
@@ -107,6 +124,7 @@ const toggleRecording = () => {
     recognition.stop()
     voiceMode.value = false
     isRecording.value = false
+    awaitingResponse = false
     // if (typeof window !== 'undefined' && window.speechSynthesis) {
     //   window.speechSynthesis.cancel()
     // }
@@ -114,6 +132,7 @@ const toggleRecording = () => {
     recognition.start()
     voiceMode.value = true
     isRecording.value = true
+    awaitingResponse = false
   }
 }
 
@@ -148,6 +167,7 @@ const stopStream = () => {
 const send = () => {
   const q = input.value.trim()
   if (!q || loading.value) return
+  if (voiceMode.value) awaitingResponse = true
 
   // 推入用户消息
   messages.value.push({role: 'user', text: q})
@@ -169,8 +189,14 @@ const send = () => {
         // speak(streamingChunk.value)
         const finalText = streamingChunk.value
         messages.value.push({role: 'assistant', text: finalText})
-        currentUtteranceId = Date.now().toString()
-        voiceBus.emit('voice:play', currentUtteranceId, finalText)
+        // currentUtteranceId = Date.now().toString()
+        // voiceBus.emit('voice:play', currentUtteranceId, finalText)
+        if (voiceMode.value) {
+          currentUtteranceId = Date.now().toString()
+          voiceBus.emit('voice:play', currentUtteranceId, finalText)
+        } else {
+          currentUtteranceId = null
+        }
         streamingChunk.value = ''
       }
       stopStream()
@@ -194,6 +220,18 @@ const goBack = () => {
 onBeforeUnmount(() => {
   stopStream()
   voiceBus.emit('voice:stop', currentUtteranceId)
+})
+
+voiceBus.on('voice:stopped', (id) => {
+  if (voiceMode.value && id === currentUtteranceId) {
+    awaitingResponse = false
+  }
+})
+
+voiceBus.on('voice:ended', (id) => {
+  if (voiceMode.value && id === currentUtteranceId) {
+    awaitingResponse = false
+  }
 })
 </script>
 

@@ -15,6 +15,11 @@ export class VoiceController {
         if (this.currentUtteranceId != null) {
           voiceBus.emit('voice:progress', this.currentUtteranceId, idx, time);
         }
+      },
+      onEnd: () => {
+        if (this.currentUtteranceId != null) {
+          voiceBus.emit('voice:ended', this.currentUtteranceId);
+        }
       }
     });
     this.abortController = null;
