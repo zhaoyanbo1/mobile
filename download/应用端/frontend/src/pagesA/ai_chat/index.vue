@@ -7,6 +7,7 @@
       </button>
       <div class="title">Chat</div>
       <div class="spacer"></div>
+      <button class="new" @click="newConversation">New</button>
     </header>
 
     <!-- 消息区 -->
@@ -49,7 +50,9 @@
 </template>
 
 <script setup>
-import {ref, nextTick, onBeforeUnmount, getCurrentInstance} from 'vue'
+// import {ref, nextTick, onBeforeUnmount, getCurrentInstance} from 'vue'
+import {ref, nextTick, onBeforeUnmount, getCurrentInstance, onMounted, watch} from 'vue'
+import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { voiceBus } from '@/voice/bus'
 
 // 头像：随便用一张本地图、CDN、或 emoji 占位
@@ -65,13 +68,28 @@ const messages = ref([
 const streamingChunk = ref('')
 const loading = ref(false)
 const scrollRef = ref(null)
-let es = null
+// let es = null
+const conversationId = ref('')
+const HISTORY_LIMIT = 10
+let ctrl = null
 
 const isRecording = ref(false)
 const voiceMode = ref(false)
 let recognition = null
 let currentUtteranceId = null
 let awaitingResponse = false
+
+onMounted(() => {
+  const savedId = localStorage.getItem('conversationId')
+  const savedMessages = localStorage.getItem('chatMessages')
+  if (savedId) conversationId.value = savedId
+  if (savedMessages) messages.value = JSON.parse(savedMessages)
+})
+
+watch([messages, conversationId], () => {
+  localStorage.setItem('conversationId', conversationId.value)
+  localStorage.setItem('chatMessages', JSON.stringify(messages.value))
+}, { deep: true })
 
 voiceBus.on('voice:error', (_id, _code, message) => {
   proxy?.$cf?.toast?.({ message, level: 'error' })
@@ -157,9 +175,12 @@ const autoScroll = async () => {
   if (el) el.scrollTop = el.scrollHeight
 }
 const stopStream = () => {
-  if (es) {
-    es.close()
-    es = null
+  // if (es) {
+  //   es.close()
+  //   es = null
+  if (ctrl) {
+    ctrl.abort()
+    ctrl = null
   }
   loading.value = false
 }
@@ -169,6 +190,7 @@ const send = () => {
   if (!q || loading.value) return
   if (voiceMode.value) awaitingResponse = true
 
+  const history = messages.value.slice(-HISTORY_LIMIT).map(m => ({ role: m.role, content: m.text }))
   // 推入用户消息
   messages.value.push({role: 'user', text: q})
   input.value = ''
@@ -179,36 +201,76 @@ const send = () => {
   voiceBus.emit('voice:stop', currentUtteranceId)
   currentUtteranceId = null
 
-  // 连接你的后端 SSE：/api/llm/stream?q=...
-  es = new EventSource(`/api/llm/chat/stream?q=${encodeURIComponent(q)}`)
-  es.onmessage = (e) => {
-    if (e.data === '[DONE]') {
-      // 把临时流式片段落入最终消息
-      if (streamingChunk.value) {
-        // messages.value.push({role: 'assistant', text: streamingChunk.value})
-        // speak(streamingChunk.value)
-        const finalText = streamingChunk.value
-        messages.value.push({role: 'assistant', text: finalText})
-        // currentUtteranceId = Date.now().toString()
-        // voiceBus.emit('voice:play', currentUtteranceId, finalText)
-        if (voiceMode.value) {
-          currentUtteranceId = Date.now().toString()
-          voiceBus.emit('voice:play', currentUtteranceId, finalText)
-        } else {
-          currentUtteranceId = null
-        }
-        streamingChunk.value = ''
+  // // 连接你的后端 SSE：/api/llm/stream?q=...
+  // es = new EventSource(`/api/llm/chat/stream?q=${encodeURIComponent(q)}`)
+  // es.onmessage = (e) => {
+  //   if (e.data === '[DONE]') {
+  //     // 把临时流式片段落入最终消息
+  //     if (streamingChunk.value) {
+  //       // messages.value.push({role: 'assistant', text: streamingChunk.value})
+  //       // speak(streamingChunk.value)
+  //       const finalText = streamingChunk.value
+  //       messages.value.push({role: 'assistant', text: finalText})
+  //       // currentUtteranceId = Date.now().toString()
+  //       // voiceBus.emit('voice:play', currentUtteranceId, finalText)
+  //       if (voiceMode.value) {
+  //         currentUtteranceId = Date.now().toString()
+  //         voiceBus.emit('voice:play', currentUtteranceId, finalText)
+  //       } else {
+  //         currentUtteranceId = null
+  const body = {
+    query: q,
+    conversationId: conversationId.value,
+    messages: history
+  }
+
+  ctrl = new AbortController()
+  fetchEventSource('/api/chat', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+    signal: ctrl.signal,
+    onmessage(e) {
+      if (e.event === 'conversation') {
+        conversationId.value = e.data
+        return
       }
+      if (e.event === 'message') {
+        streamingChunk.value += e.data
+        autoScroll()
+        return
+      }
+      if (e.event === 'done') {
+        if (streamingChunk.value) {
+          const finalText = streamingChunk.value
+          messages.value.push({ role: 'assistant', text: finalText })
+          if (voiceMode.value) {
+            currentUtteranceId = Date.now().toString()
+            voiceBus.emit('voice:play', currentUtteranceId, finalText)
+          } else {
+            currentUtteranceId = null
+          }
+          streamingChunk.value = ''
+        }
+        //streamingChunk.value = ''
+        stopStream()
+        autoScroll()
+        return
+      }
+    },
+    onerror(err) {
       stopStream()
-      autoScroll()
-      return
+      // autoScroll()
+      // return
     }
-    streamingChunk.value += e.data
-    autoScroll()
-  }
-  es.onerror = () => {
-    stopStream()
-  }
+  })
+}
+
+const newConversation = () => {
+  stopStream()
+  conversationId.value = ''
+  messages.value = []
+  streamingChunk.value = ''
 }
 
 const goBack = () => {
@@ -273,6 +335,11 @@ voiceBus.on('voice:ended', (id) => {
 .topbar .spacer {
   width: 32px;
 }
+.topbar .new {
+  margin-left: 8px;
+  padding: 8px;
+}
+
 
 /* 消息列表 */
 .messages {
