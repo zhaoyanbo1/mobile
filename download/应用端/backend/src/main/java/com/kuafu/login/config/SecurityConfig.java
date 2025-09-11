@@ -82,6 +82,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/getLoginUser").permitAll()
                 .antMatchers("/system/setting/login").permitAll()
                 .antMatchers("/api/system/setting/login").permitAll()
+                .antMatchers("/api/data/invoke").permitAll()
+                .antMatchers("/api/data/invoke/**").permitAll()
                 .antMatchers("/chatbot/**", "/difyConfig/**").permitAll()
                 .antMatchers("/api/tts/stream").permitAll()
                 .antMatchers("/common/**").permitAll()

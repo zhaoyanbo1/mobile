@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kuafu.common.deserializer.MultiDateDeserializer;
 import com.kuafu.common.domin.PageRequest;
+import com.kuafu.common.entity.BaseEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,10 +15,6 @@ import com.kuafu.common.entity.StaticResource;
 import com.kuafu.common.entity.BaseEntity;
 /**
  * <p>健康问卷-分页列表-响应参数</p>
- *
- * @author kuafuai
- * @description
- * @date 2025/08/19 20:01
  */
 @Data
 @NoArgsConstructor
@@ -25,33 +22,45 @@ import com.kuafu.common.entity.BaseEntity;
 @EqualsAndHashCode(callSuper = true)
 public class HealthQuestionnairePageVO extends BaseEntity {
 
-@JsonProperty("healthQuestionnaireId")
+    @JsonProperty("healthQuestionnaireId")
     private Integer healthQuestionnaireId;
-@JsonProperty("userInfoUserInfoId1")
+    @JsonProperty("userInfoUserInfoId1")
     private Integer userInfoUserInfoId1;
-@JsonProperty("name")
-    private String name;
-@JsonProperty("age")
-    private Integer age;
-@JsonProperty("residence")
-    private String residence;
-@JsonProperty("chronicDisease")
-    private String chronicDisease;
-@JsonProperty("allergyHistory")
-    private String allergyHistory;
-@JsonProperty("commonMedication")
-    private String commonMedication;
-@JsonProperty("dietPreference")
-    private String dietPreference;
-@JsonProperty("exerciseFrequency")
-    private String exerciseFrequency;
+    @JsonProperty("adl")
+    private Integer adl;
+    @JsonProperty("mobilityOut")
+    private Integer mobilityOut;
+    @JsonProperty("falls")
+    private Integer falls;
+    @JsonProperty("weightLoss")
+    private Integer weightLoss;
+    @JsonProperty("diseases")
+    private String diseases;
+    @JsonProperty("paMinutes")
+    private Integer paMinutes;
+    @JsonProperty("paWillingness")
+    private Integer paWillingness;
+    @JsonProperty("fluVaccine")
+    private Integer fluVaccine;
+    @JsonProperty("polypharmacy")
+    private Integer polypharmacy;
+    @JsonProperty("social")
+    private Integer social;
+    @JsonProperty("fvServes")
+    private Integer fvServes;
+    @JsonProperty("totalScore")
+    private Integer totalScore;
+    @JsonProperty("riskLevel")
+    private String riskLevel;
+    @JsonProperty("answersJson")
+    private String answersJson;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("creationTime")
+    @JsonProperty("creationTime")
     private Date creationTime;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("updateTime")
+    @JsonProperty("updateTime")
     private Date updateTime;
-@JsonProperty("version")
+    @JsonProperty("version")
     private Integer version;
 
 

@@ -55,6 +55,35 @@ public class Category implements Serializable {
      */
     private String relevanceTableColumn;
 
+    public Integer getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Integer getParentId() {
+        return parentId;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public String getRelevanceTable() {
+        return relevanceTable;
+    }
+
+    public String getRelevanceTableColumn() {
+        return relevanceTableColumn;
+    }
+
+
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 

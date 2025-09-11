@@ -10,6 +10,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,9 +23,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
-@Slf4j
+//@Slf4j
 @ConditionalOnProperty(prefix = "login", name = "enable")
 public class TokenService {
+    private static final Logger log = LoggerFactory.getLogger(TokenService.class);
 
     @Value("${token.header:Authorization}")
     private String header;
