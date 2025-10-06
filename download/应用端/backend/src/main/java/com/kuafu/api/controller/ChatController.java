@@ -6,6 +6,8 @@ import com.kuafu.llm.service.ChatService;
 import com.kuafu.llm.service.ConversationService;
 import com.openai.core.http.StreamResponse;
 import com.openai.models.responses.ResponseStreamEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,7 @@ import java.io.PrintWriter;
 @CrossOrigin
 public class ChatController {
 
+    private static final Logger log = LoggerFactory.getLogger(ChatController.class);
     private final ChatService chatService;
     private final ConversationService conversationService;
 
@@ -63,6 +66,9 @@ public class ChatController {
         writer.write("data: " + conversationId + "\n\n");
         writer.flush();
 
+        var messages = conversationService.getMessages(conversationId);
+        logConversationState(conversationId, messages);
+
         String prompt = conversationService.buildPrompt(conversationId);
 
         StringBuilder answerBuilder = new StringBuilder();
@@ -91,5 +97,25 @@ public class ChatController {
         assistantMsg.setRole("assistant");
         assistantMsg.setContent(answerBuilder.toString());
         conversationService.addMessage(conversationId, assistantMsg);
+    }
+
+    private void logConversationState(String conversationId, java.util.List<ChatMessage> messages) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("[conversation=").append(conversationId).append("] [stage=pre-request] ");
+        int index = 0;
+        for (ChatMessage message : messages) {
+            sb.append("#").append(index++)
+                    .append(" role=").append(message.getRole());
+            if (StringUtils.hasText(message.getName())) {
+                sb.append(" name=").append(message.getName());
+            }
+            sb.append(" content=")
+                    .append(message.getContent() == null ? "" : message.getContent().replace('\n', ' '))
+                    .append(" | ");
+        }
+        log.debug(sb.toString());
     }
 }
