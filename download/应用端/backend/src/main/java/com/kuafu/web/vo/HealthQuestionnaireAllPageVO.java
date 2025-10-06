@@ -15,10 +15,6 @@ import com.kuafu.common.entity.StaticResource;
 
 /**
  * <p>健康问卷-分页列表-响应参数</p>
- *
- * @author kuafuai
- * @description
- * @date 2025/08/19 20:01
  */
 @Data
 @NoArgsConstructor
@@ -31,9 +27,37 @@ public class HealthQuestionnaireAllPageVO extends BaseEntity {
     private Date creationTime;
 @JsonProperty("healthQuestionnaireId")
     private Integer healthQuestionnaireId;
-@JsonProperty("userInfoUserInfoId1")
+    @JsonProperty("userInfoUserInfoId1")
     private Integer userInfoUserInfoId1;
-@JsonProperty("allergyHistory")
+    @JsonProperty("adl")
+    private Integer adl;
+    @JsonProperty("mobilityOut")
+    private Integer mobilityOut;
+    @JsonProperty("falls")
+    private Integer falls;
+    @JsonProperty("weightLoss")
+    private Integer weightLoss;
+    @JsonProperty("diseases")
+    private String diseases;
+    @JsonProperty("paMinutes")
+    private Integer paMinutes;
+    @JsonProperty("paWillingness")
+    private Integer paWillingness;
+    @JsonProperty("fluVaccine")
+    private Integer fluVaccine;
+    @JsonProperty("polypharmacy")
+    private Integer polypharmacy;
+    @JsonProperty("social")
+    private Integer social;
+    @JsonProperty("fvServes")
+    private Integer fvServes;
+    @JsonProperty("totalScore")
+    private Integer totalScore;
+    @JsonProperty("riskLevel")
+    private String riskLevel;
+    @JsonProperty("answersJson")
+    private String answersJson;
+    @JsonProperty("allergyHistory")
     private String allergyHistory;
     @JsonDeserialize(using = MultiDateDeserializer.class)
 @JsonProperty("lastLoginDate")

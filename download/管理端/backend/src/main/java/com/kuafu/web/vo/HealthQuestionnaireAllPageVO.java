@@ -24,6 +24,34 @@ public class HealthQuestionnaireAllPageVO extends PageRequest {
     private Integer userInfoUserInfoId1;
     @JsonProperty(value = "healthQuestionnaireId")
     private Integer healthQuestionnaireId;
+    @JsonProperty(value = "adl")
+    private Integer adl;
+    @JsonProperty(value = "mobilityOut")
+    private Integer mobilityOut;
+    @JsonProperty(value = "falls")
+    private Integer falls;
+    @JsonProperty(value = "weightLoss")
+    private Integer weightLoss;
+    @JsonProperty(value = "diseases")
+    private String diseases;
+    @JsonProperty(value = "paMinutes")
+    private Integer paMinutes;
+    @JsonProperty(value = "paWillingness")
+    private Integer paWillingness;
+    @JsonProperty(value = "fluVaccine")
+    private Integer fluVaccine;
+    @JsonProperty(value = "polypharmacy")
+    private Integer polypharmacy;
+    @JsonProperty(value = "social")
+    private Integer social;
+    @JsonProperty(value = "fvServes")
+    private Integer fvServes;
+    @JsonProperty(value = "totalScore")
+    private Integer totalScore;
+    @JsonProperty(value = "riskLevel")
+    private String riskLevel;
+    @JsonProperty(value = "answersJson")
+    private String answersJson;
     @JsonProperty(value = "lastLoginDate")
     private Date lastLoginDate;
     @JsonProperty(value = "phoneNumber")

@@ -22,23 +22,26 @@
           </button>
         </view>
         
-        <view v-if="healthData" class="grid grid-cols-2 gap-4">
-          <view class="bg-primary-50 rounded-lg p-3">
-            <text class="block text-sm text-primary-700">年龄</text>
-            <text class="block text-2xl font-bold text-primary-800">{{ healthData.age || '--' }}</text>
-          </view>
-          <view class="bg-success-50 rounded-lg p-3">
-            <text class="block text-sm text-success-700">运动频率</text>
-            <text class="block text-2xl font-bold text-success-800">{{ healthData.exercise_frequency || '--' }}</text>
-          </view>
-          <view class="bg-warning-50 rounded-lg p-3">
-            <text class="block text-sm text-warning-700">饮食偏好</text>
-            <text class="block text-2xl font-bold text-warning-800">{{ healthData.diet_preference || '--' }}</text>
-          </view>
-          <view class="bg-danger-50 rounded-lg p-3">
-            <text class="block text-sm text-danger-700">慢性病</text>
-            <text class="block text-2xl font-bold text-danger-800">{{ healthData.chronic_disease ? '有' : '无' }}</text>
-          </view>
+<!--        <view v-if="healthData" class="grid grid-cols-2 gap-4">-->
+<!--          <view class="bg-primary-50 rounded-lg p-3">-->
+<!--            <text class="block text-sm text-primary-700">年龄</text>-->
+<!--            <text class="block text-2xl font-bold text-primary-800">{{ healthData.age || '&#45;&#45;' }}</text>-->
+<!--          </view>-->
+<!--          <view class="bg-success-50 rounded-lg p-3">-->
+<!--            <text class="block text-sm text-success-700">运动频率</text>-->
+<!--            <text class="block text-2xl font-bold text-success-800">{{ healthData.exercise_frequency || '&#45;&#45;' }}</text>-->
+<!--          </view>-->
+<!--          <view class="bg-warning-50 rounded-lg p-3">-->
+<!--            <text class="block text-sm text-warning-700">饮食偏好</text>-->
+<!--            <text class="block text-2xl font-bold text-warning-800">{{ healthData.diet_preference || '&#45;&#45;' }}</text>-->
+<!--          </view>-->
+<!--          <view class="bg-danger-50 rounded-lg p-3">-->
+<!--            <text class="block text-sm text-danger-700">慢性病</text>-->
+<!--            <text class="block text-2xl font-bold text-danger-800">{{ healthData.chronic_disease ? '有' : '无' }}</text>-->
+<!--          </view>-->
+        <view v-if="healthData" class="flex flex-col items-center py-4">
+          <text class="text-5xl mb-2">{{ riskEmoji }}</text>
+          <text class="text-lg font-bold text-primary-800">{{ healthData.risk_level || '--' }}</text>
         </view>
         <view v-else class="py-8 text-center text-neutral-400">
           <text class="block">暂无健康数据</text>
@@ -166,6 +169,13 @@ const { proxy } = getCurrentInstance();
 // 响应式数据
 const userInfo = ref({});
 const healthData = ref(null);
+const riskEmojiMap = {
+  'Low risk': '😊',
+  'Moderate risk': '😐',
+  'High risk': '😟',
+  'Extremely high risk': '😱'
+};
+const riskEmoji = computed(() => riskEmojiMap[healthData.value?.risk_level] || '❓');
 const emergencyContacts = ref([]);
 const systemSettings = ref({
   reminder_volume: 50,
@@ -207,17 +217,28 @@ const fetchUserData = async () => {
 // };
 
 const fetchHealthData = async (userId) => {
-  const res = await proxy.$cf.table.list({
+  const res = await proxy.$cf.table.add({
     table_name: 'health_questionnaire',
-    param: { user_info_user_info_id_1: userId },
+    //param: { user_info_user_info_id_1: userId },
 
     // 下面这些是尽量“投喂”，如果SDK支持会生效；不支持也无妨（我们会再前端兜底）
-    order: 'health_questionnaire_id desc',
-    order_by: 'health_questionnaire_id',
-    sort: 'desc',
-    page_size: 1,
-    limit: 1
+    // order: 'health_questionnaire_id desc',
+    // order_by: 'health_questionnaire_id',
+    // sort: 'desc',
+    // page_size: 1,
+    // limit: 1
   });
+  // const res = await proxy.$cf.table.list({
+  //   table_name: 'health_questionnaire',
+  //   // param: { user_info_user_info_id_1: userId },
+  //
+  //   // 下面这些是尽量“投喂”，如果SDK支持会生效；不支持也无妨（我们会再前端兜底）
+  //   // order: 'health_questionnaire_id desc',
+  //   // order_by: 'health_questionnaire_id',
+  //   // sort: 'desc',
+  //   page_size: 1,
+  //   limit: 1
+  // });
 
   if (res?.success && Array.isArray(res.data) && res.data.length) {
     // 前端兜底：按时间/ID 进行降序挑最新一条

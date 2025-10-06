@@ -19,10 +19,6 @@ import lombok.NoArgsConstructor;
 
 /**
  * <p>  健康问卷 </p>
- *
- * @author kuafuai
- * @description
- * @date 2025/08/19 20:01
  */
 @Data
 @Builder
@@ -38,6 +34,48 @@ public class HealthQuestionnaireAll {
     @TableField(value="hq.user_info_user_info_id_1")
     @JsonProperty("user_info_user_info_id_1")
     private Integer userInfoUserInfoId1;
+    @TableField(value="hq.adl")
+    @JsonProperty("adl")
+    private Integer adl;
+    @TableField(value="hq.mobility_out")
+    @JsonProperty("mobility_out")
+    private Integer mobilityOut;
+    @TableField(value="hq.falls")
+    @JsonProperty("falls")
+    private Integer falls;
+    @TableField(value="hq.weight_loss")
+    @JsonProperty("weight_loss")
+    private Integer weightLoss;
+    @TableField(value="hq.diseases")
+    @JsonProperty("diseases")
+    private String diseases;
+    @TableField(value="hq.pa_minutes")
+    @JsonProperty("pa_minutes")
+    private Integer paMinutes;
+    @TableField(value="hq.pa_willingness")
+    @JsonProperty("pa_willingness")
+    private Integer paWillingness;
+    @TableField(value="hq.flu_vaccine")
+    @JsonProperty("flu_vaccine")
+    private Integer fluVaccine;
+    @TableField(value="hq.polypharmacy")
+    @JsonProperty("polypharmacy")
+    private Integer polypharmacy;
+    @TableField(value="hq.social")
+    @JsonProperty("social")
+    private Integer social;
+    @TableField(value="hq.fv_serves")
+    @JsonProperty("fv_serves")
+    private Integer fvServes;
+    @TableField(value="hq.total_score")
+    @JsonProperty("total_score")
+    private Integer totalScore;
+    @TableField(value="hq.risk_level")
+    @JsonProperty("risk_level")
+    private String riskLevel;
+    @TableField(value="hq.answers_json")
+    @JsonProperty("answers_json")
+    private String answersJson;
     @TableField(value="hq.allergy_history")
     @JsonProperty("allergy_history")
     private String allergyHistory;

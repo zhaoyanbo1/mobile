@@ -159,6 +159,50 @@ public class HealthQuestionnaireAllControllerService implements IControllerServi
                 });
             }
 
+
+        if(pageVO.getAdl() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getAdl, pageVO.getAdl());
+        }
+        if(pageVO.getMobilityOut() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getMobilityOut, pageVO.getMobilityOut());
+        }
+        if(pageVO.getFalls() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getFalls, pageVO.getFalls());
+        }
+        if(pageVO.getWeightLoss() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getWeightLoss, pageVO.getWeightLoss());
+        }
+        if(StringUtils.isNotEmpty(pageVO.getDiseases())) {
+            queryWrapper.like(HealthQuestionnaireAll::getDiseases, pageVO.getDiseases());
+        }
+        if(pageVO.getPaMinutes() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getPaMinutes, pageVO.getPaMinutes());
+        }
+        if(pageVO.getPaWillingness() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getPaWillingness, pageVO.getPaWillingness());
+        }
+        if(pageVO.getFluVaccine() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getFluVaccine, pageVO.getFluVaccine());
+        }
+        if(pageVO.getPolypharmacy() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getPolypharmacy, pageVO.getPolypharmacy());
+        }
+        if(pageVO.getSocial() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getSocial, pageVO.getSocial());
+        }
+        if(pageVO.getFvServes() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getFvServes, pageVO.getFvServes());
+        }
+        if(pageVO.getTotalScore() != null){
+            queryWrapper.eq(HealthQuestionnaireAll::getTotalScore, pageVO.getTotalScore());
+        }
+        if(StringUtils.isNotEmpty(pageVO.getRiskLevel())) {
+            queryWrapper.like(HealthQuestionnaireAll::getRiskLevel, pageVO.getRiskLevel());
+        }
+        if(StringUtils.isNotEmpty(pageVO.getAnswersJson())) {
+            queryWrapper.like(HealthQuestionnaireAll::getAnswersJson, pageVO.getAnswersJson());
+        }
+
                     healthQuestionnaireAllService.pageNew(page, pageVO, queryWrapper);
                     page.getRecords().forEach(item -> {
                     });
@@ -224,8 +268,50 @@ public class HealthQuestionnaireAllControllerService implements IControllerServi
             if(StringUtils.isNotEmpty(vo.getUsername())) {
                             queryWrapper.like(HealthQuestionnaireAll::getUsername, vo.getUsername());
                 }
-                return ResultUtils.success(healthQuestionnaireAllService.selectListNew(new PageRequest(),queryWrapper,false));
+            if(vo.getAdl() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getAdl, vo.getAdl());
             }
+            if(vo.getMobilityOut() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getMobilityOut, vo.getMobilityOut());
+            }
+            if(vo.getFalls() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getFalls, vo.getFalls());
+            }
+            if(vo.getWeightLoss() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getWeightLoss, vo.getWeightLoss());
+            }
+            if(StringUtils.isNotEmpty(vo.getDiseases())) {
+                queryWrapper.eq(HealthQuestionnaireAll::getDiseases, vo.getDiseases());
+            }
+            if(vo.getPaMinutes() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getPaMinutes, vo.getPaMinutes());
+            }
+            if(vo.getPaWillingness() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getPaWillingness, vo.getPaWillingness());
+            }
+            if(vo.getFluVaccine() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getFluVaccine, vo.getFluVaccine());
+            }
+            if(vo.getPolypharmacy() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getPolypharmacy, vo.getPolypharmacy());
+            }
+            if(vo.getSocial() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getSocial, vo.getSocial());
+            }
+            if(vo.getFvServes() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getFvServes, vo.getFvServes());
+            }
+            if(vo.getTotalScore() != null){
+                queryWrapper.eq(HealthQuestionnaireAll::getTotalScore, vo.getTotalScore());
+            }
+            if(StringUtils.isNotEmpty(vo.getRiskLevel())) {
+                queryWrapper.eq(HealthQuestionnaireAll::getRiskLevel, vo.getRiskLevel());
+            }
+            if(StringUtils.isNotEmpty(vo.getAnswersJson())) {
+                queryWrapper.eq(HealthQuestionnaireAll::getAnswersJson, vo.getAnswersJson());
+            }
+            return ResultUtils.success(healthQuestionnaireAllService.selectListNew(new PageRequest(),queryWrapper,false));
+        }
 
 
             public BaseResponse get(HealthQuestionnaireAllPageVO vo) {

@@ -36,6 +36,62 @@ public class HealthQuestionnaireAll  {
     @TableField(value="hq.health_questionnaire_id")
     @JsonProperty(value = "healthQuestionnaireId")
     @Excel(name = "主键")
+    @TableField(value="hq.adl")
+    @JsonProperty(value = "adl")
+    @Excel(name = "ADL")
+    private Integer adl;
+    @TableField(value="hq.mobility_out")
+    @JsonProperty(value = "mobilityOut")
+    @Excel(name = "Mobility out")
+    private Integer mobilityOut;
+    @TableField(value="hq.falls")
+    @JsonProperty(value = "falls")
+    @Excel(name = "Falls")
+    private Integer falls;
+    @TableField(value="hq.weight_loss")
+    @JsonProperty(value = "weightLoss")
+    @Excel(name = "Weight loss")
+    private Integer weightLoss;
+    @TableField(value="hq.diseases")
+    @JsonProperty(value = "diseases")
+    @Excel(name = "Diseases")
+    private String diseases;
+    @TableField(value="hq.pa_minutes")
+    @JsonProperty(value = "paMinutes")
+    @Excel(name = "PA minutes")
+    private Integer paMinutes;
+    @TableField(value="hq.pa_willingness")
+    @JsonProperty(value = "paWillingness")
+    @Excel(name = "PA willingness")
+    private Integer paWillingness;
+    @TableField(value="hq.flu_vaccine")
+    @JsonProperty(value = "fluVaccine")
+    @Excel(name = "Flu vaccine")
+    private Integer fluVaccine;
+    @TableField(value="hq.polypharmacy")
+    @JsonProperty(value = "polypharmacy")
+    @Excel(name = "Polypharmacy")
+    private Integer polypharmacy;
+    @TableField(value="hq.social")
+    @JsonProperty(value = "social")
+    @Excel(name = "Social")
+    private Integer social;
+    @TableField(value="hq.fv_serves")
+    @JsonProperty(value = "fvServes")
+    @Excel(name = "FV serves")
+    private Integer fvServes;
+    @TableField(value="hq.total_score")
+    @JsonProperty(value = "totalScore")
+    @Excel(name = "Total score")
+    private Integer totalScore;
+    @TableField(value="hq.risk_level")
+    @JsonProperty(value = "riskLevel")
+    @Excel(name = "Risk level")
+    private String riskLevel;
+    @TableField(value="hq.answers_json")
+    @JsonProperty(value = "answersJson")
+    @Excel(name = "Answers")
+    private String answersJson;
     private Integer healthQuestionnaireId;
     @TableField(value="ui.last_login_date")
     @JsonProperty(value = "lastLoginDate")
