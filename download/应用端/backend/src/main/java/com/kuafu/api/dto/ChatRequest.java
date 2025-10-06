@@ -16,6 +16,13 @@ public class ChatRequest {
 
     private String conversationId;
 
-    /** recent history sent from client */
+    /** optional title hint when creating a new conversation */
+    private String conversationTitle;
+
+    /** identifies the end user for persistence */
+    @NotNull(message = "userId不能为空")
+    private String userId;
+
+    /** legacy field: recent history sent from client */
     private List<ChatMessage> messages;
 }
