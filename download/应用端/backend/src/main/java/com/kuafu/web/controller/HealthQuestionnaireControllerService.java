@@ -21,7 +21,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.transaction.support.TransactionTemplate;
 import com.kuafu.common.sensitive.SensitiveFilter;
 import org.springframework.stereotype.Service;
-import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import io.swagger.annotations.Api;
@@ -47,89 +46,26 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 public class HealthQuestionnaireControllerService {
 
     private final IHealthQuestionnaireService healthQuestionnaireService;
-
     public BaseResponse add(HealthQuestionnaireVO vo) {
     HealthQuestionnaire entity = toEntity(vo);
-        boolean flag = healthQuestionnaireService.saveOrUpdateWithScore(entity);
-        return flag ? ResultUtils.success(entity.getHealthQuestionnaireId()) : ResultUtils.error(ErrorCode.OPERATION_ERROR);
+    boolean flag = healthQuestionnaireService.saveOrUpdateWithScore(entity);
+    return flag ? ResultUtils.success(entity.getHealthQuestionnaireId()) : ResultUtils.error(ErrorCode.OPERATION_ERROR);
     }
 
     public BaseResponse update(HealthQuestionnaireVO vo) {
-        HealthQuestionnaire entity = toEntity(vo);
-        boolean flag = healthQuestionnaireService.saveOrUpdateWithScore(entity);
-        return flag ? ResultUtils.success(entity.getHealthQuestionnaireId()) : ResultUtils.error(ErrorCode.OPERATION_ERROR);
+    HealthQuestionnaire entity = toEntity(vo);
+    boolean flag = healthQuestionnaireService.saveOrUpdateWithScore(entity);
+    return flag ? ResultUtils.success(entity.getHealthQuestionnaireId()) : ResultUtils.error(ErrorCode.OPERATION_ERROR);
     }
 
     public BaseResponse get(HealthQuestionnaireVO vo) {
-        HealthQuestionnaire entity = healthQuestionnaireService.getById(vo.getHealthQuestionnaireId());
-        return entity != null ? ResultUtils.success(entity) : ResultUtils.error(ErrorCode.OPERATION_ERROR);
-    }
-
-    public BaseResponse list(HealthQuestionnaireVO vo) {
-        LambdaQueryWrapper<HealthQuestionnaire> queryWrapper = new LambdaQueryWrapper<>();
-        if (vo.getHealthQuestionnaireId() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getHealthQuestionnaireId, vo.getHealthQuestionnaireId());
-        }
-        if (vo.getUserInfoUserInfoId1() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getUserInfoUserInfoId1, vo.getUserInfoUserInfoId1());
-        }
-        if (vo.getAdl() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getAdl, vo.getAdl());
-        }
-        if (vo.getMobilityOut() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getMobilityOut, vo.getMobilityOut());
-        }
-        if (vo.getFalls() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getFalls, vo.getFalls());
-        }
-        if (vo.getWeightLoss() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getWeightLoss, vo.getWeightLoss());
-        }
-        if (StringUtils.isNotEmpty(vo.getDiseases())) {
-            queryWrapper.eq(HealthQuestionnaire::getDiseases, vo.getDiseases());
-        }
-        if (vo.getPaMinutes() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getPaMinutes, vo.getPaMinutes());
-        }
-        if (vo.getPaWillingness() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getPaWillingness, vo.getPaWillingness());
-        }
-        if (vo.getFluVaccine() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getFluVaccine, vo.getFluVaccine());
-        }
-        if (vo.getPolypharmacy() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getPolypharmacy, vo.getPolypharmacy());
-        }
-        if (vo.getSocial() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getSocial, vo.getSocial());
-        }
-        if (vo.getFvServes() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getFvServes, vo.getFvServes());
-        }
-        if (vo.getTotalScore() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getTotalScore, vo.getTotalScore());
-        }
-        if (StringUtils.isNotEmpty(vo.getRiskLevel())) {
-            queryWrapper.eq(HealthQuestionnaire::getRiskLevel, vo.getRiskLevel());
-        }
-        if (StringUtils.isNotEmpty(vo.getAnswersJson())) {
-            queryWrapper.eq(HealthQuestionnaire::getAnswersJson, vo.getAnswersJson());
-        }
-        if (vo.getCreationTime() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getCreationTime, vo.getCreationTime());
-        }
-        if (vo.getUpdateTime() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getUpdateTime, vo.getUpdateTime());
-        }
-        if (vo.getVersion() != null) {
-            queryWrapper.eq(HealthQuestionnaire::getVersion, vo.getVersion());
-        }
-        return ResultUtils.success(healthQuestionnaireService.list(queryWrapper));
+    HealthQuestionnaire entity = healthQuestionnaireService.getById(vo.getHealthQuestionnaireId());
+    return entity != null ? ResultUtils.success(entity) : ResultUtils.error(ErrorCode.OPERATION_ERROR);
     }
 
     public BaseResponse delete(HealthQuestionnaireVO vo) {
-        boolean flag = healthQuestionnaireService.removeById(vo.getHealthQuestionnaireId());
-        return flag ? ResultUtils.success() : ResultUtils.error(ErrorCode.OPERATION_ERROR);
+    boolean flag = healthQuestionnaireService.removeById(vo.getHealthQuestionnaireId());
+    return flag ? ResultUtils.success() : ResultUtils.error(ErrorCode.OPERATION_ERROR);
     }
 
     private HealthQuestionnaire toEntity(HealthQuestionnaireVO vo) {

@@ -6,20 +6,6 @@
         hq.creation_time   ,
         hq.health_questionnaire_id   ,
         hq.user_info_user_info_id_1   ,
-        hq.adl   ,
-        hq.mobility_out   ,
-        hq.falls   ,
-        hq.weight_loss   ,
-        hq.diseases   ,
-        hq.pa_minutes   ,
-        hq.pa_willingness   ,
-        hq.flu_vaccine   ,
-        hq.polypharmacy   ,
-        hq.social   ,
-        hq.fv_serves   ,
-        hq.total_score   ,
-        hq.risk_level   ,
-        hq.answers_json   ,
         hq.allergy_history   ,
         ui.last_login_date   ,
         hq.version   ,
@@ -49,34 +35,6 @@
         <result property="healthQuestionnaireId" column="health_questionnaire_id"/>
 
         <result property="userInfoUserInfoId1" column="user_info_user_info_id_1"/>
-
-        <result property="adl" column="adl"/>
-
-        <result property="mobilityOut" column="mobility_out"/>
-
-        <result property="falls" column="falls"/>
-
-        <result property="weightLoss" column="weight_loss"/>
-
-        <result property="diseases" column="diseases"/>
-
-        <result property="paMinutes" column="pa_minutes"/>
-
-        <result property="paWillingness" column="pa_willingness"/>
-
-        <result property="fluVaccine" column="flu_vaccine"/>
-
-        <result property="polypharmacy" column="polypharmacy"/>
-
-        <result property="social" column="social"/>
-
-        <result property="fvServes" column="fv_serves"/>
-
-        <result property="totalScore" column="total_score"/>
-
-        <result property="riskLevel" column="risk_level"/>
-
-        <result property="answersJson" column="answers_json"/>
 
         <result property="allergyHistory" column="allergy_history"/>
 
@@ -118,20 +76,6 @@ select
 hq.creation_time   ,
 hq.health_questionnaire_id   ,
 hq.user_info_user_info_id_1   ,
-hq.adl   ,
-hq.mobility_out   ,
-hq.falls   ,
-hq.weight_loss   ,
-hq.diseases   ,
-hq.pa_minutes   ,
-hq.pa_willingness   ,
-hq.flu_vaccine   ,
-hq.polypharmacy   ,
-hq.social   ,
-hq.fv_serves   ,
-hq.total_score   ,
-hq.risk_level   ,
-hq.answers_json   ,
 hq.allergy_history   ,
 ui.last_login_date   ,
 hq.version   ,
@@ -167,20 +111,6 @@ select
 hq.creation_time   ,
 hq.health_questionnaire_id   ,
 hq.user_info_user_info_id_1   ,
-hq.adl   ,
-hq.mobility_out   ,
-hq.falls   ,
-hq.weight_loss   ,
-hq.diseases   ,
-hq.pa_minutes   ,
-hq.pa_willingness   ,
-hq.flu_vaccine   ,
-hq.polypharmacy   ,
-hq.social   ,
-hq.fv_serves   ,
-hq.total_score   ,
-hq.risk_level   ,
-hq.answers_json   ,
 hq.allergy_history   ,
 ui.last_login_date   ,
 hq.version   ,
@@ -210,20 +140,6 @@ select
 hq.creation_time  ,
 hq.health_questionnaire_id  ,
 hq.user_info_user_info_id_1  ,
-hq.adl  ,
-hq.mobility_out  ,
-hq.falls  ,
-hq.weight_loss  ,
-hq.diseases  ,
-hq.pa_minutes  ,
-hq.pa_willingness  ,
-hq.flu_vaccine  ,
-hq.polypharmacy  ,
-hq.social  ,
-hq.fv_serves  ,
-hq.total_score  ,
-hq.risk_level  ,
-hq.answers_json  ,
 hq.allergy_history  ,
 ui.last_login_date  ,
 hq.version  ,
@@ -257,20 +173,6 @@ select
 hq.creation_time  ,
 hq.health_questionnaire_id  ,
 hq.user_info_user_info_id_1  ,
-hq.adl  ,
-hq.mobility_out  ,
-hq.falls  ,
-hq.weight_loss  ,
-hq.diseases  ,
-hq.pa_minutes  ,
-hq.pa_willingness  ,
-hq.flu_vaccine  ,
-hq.polypharmacy  ,
-hq.social  ,
-hq.fv_serves  ,
-hq.total_score  ,
-hq.risk_level  ,
-hq.answers_json  ,
 hq.allergy_history  ,
 ui.last_login_date  ,
 hq.version  ,

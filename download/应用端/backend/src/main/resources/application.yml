@@ -25,7 +25,7 @@ token:
 #mysql
 spring:
   profiles:
-    active: ${DB_TYPE:sqlite}
+    active: ${DB_TYPE:mysql}
   jackson:
     date-format: "yyyy-MM-dd HH:mm:ss"
     time-zone: GMT+8
@@ -115,5 +115,10 @@ openai:
   apiKey: ${OPENAI_API_KEY}     # 建议用环境变量注入，避免写死
   baseUrl: https://api.openai.com
   model: gpt-5
-
+#
+#
+#
+#spring:
+#  profiles:
+#    active: ${DB_TYPE:mysql}
 

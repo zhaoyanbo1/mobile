@@ -6,6 +6,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -49,7 +55,27 @@ public class UnifiedDataController {
             } else {
                 vo = VoConverter.convert(table, data);
             }
-
+            // 手动覆盖 reminderTime
+            if (data.containsKey("reminder_time")) {
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                LocalDateTime local = LocalDateTime.parse(data.get("reminder_time").toString(), fmt);
+                LocalDateTime fixed = local.plusHours(2).plusMinutes(30);
+//                ZoneId adelaide = ZoneId.of("Australia/Adelaide");
+                ZonedDateTime zoned = fixed.atZone(ZoneId.systemDefault());
+                Date date = Date.from(zoned.toInstant());
+                try {
+                    var field = vo.getClass().getDeclaredField("reminderTime");
+                    field.setAccessible(true);
+                    field.set(vo, date);
+                    System.out.println("[VO Overwrite] reminderTime = " + date);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+//            System.out.println("vo type = " + vo.getClass().getName());
+//            var getter = vo.getClass().getMethod("getReminderTime");
+//            Object value = getter.invoke(vo);
+//            System.out.println("reminderTime = " + value);
             return dynamicServiceInvoker.invoke(table, vo, method);
         } catch (Exception e) {
 

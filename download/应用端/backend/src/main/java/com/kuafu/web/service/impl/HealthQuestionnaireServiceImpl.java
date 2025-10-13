@@ -48,13 +48,13 @@ public class HealthQuestionnaireServiceImpl extends ServiceImpl<HealthQuestionna
         entity.setTotalScore(total);
         String risk;
         if (total <= 6) {
-            risk = "低风险";
+            risk = "Low risk";
         } else if (total <= 14) {
-            risk = "中等风险";
+            risk = "Moderate risk";
         } else if (total <= 22) {
-            risk = "高风险";
+            risk = "High risk";
         } else {
-            risk = "极高风险";
+            risk = "Extremely high risk";
         }
         entity.setRiskLevel(risk);
     }

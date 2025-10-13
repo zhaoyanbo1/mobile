@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ConversationService {
-//    private static final Logger log = LoggerFactory.getLogger(ConversationService.class);
+    //    private static final Logger log = LoggerFactory.getLogger(ConversationService.class);
 //
 //    /** maximum number of non-system messages to retain */
 //    private static final int MAX_HISTORY = 32;
@@ -59,7 +59,7 @@ public class ConversationService {
             "Always close with an encouraging note."
     );
 
-//    private final Map<String, Deque<ChatMessage>> store = Collections.synchronizedMap(
+    //    private final Map<String, Deque<ChatMessage>> store = Collections.synchronizedMap(
 //            new LinkedHashMap<String, Deque<ChatMessage>>(16, 0.75f, true) {
 //                @Override
 //                protected boolean removeEldestEntry(Map.Entry<String, Deque<ChatMessage>> eldest) {
@@ -201,7 +201,7 @@ public class ConversationService {
         return message.getMessageId();
     }
 
-//        if (SYSTEM_ROLE.equals(message.getRole())) {
+    //        if (SYSTEM_ROLE.equals(message.getRole())) {
 //            log.debug("Ignoring attempt to append system message to conversation {}", conversationId);
     @Transactional
     public void updateAssistantMessageContent(Long messageId, String content) {
@@ -215,7 +215,7 @@ public class ConversationService {
         messageMapper.update(null, updateWrapper);
     }
 
-//        ChatMessage stored = copyMessage(message);
+    //        ChatMessage stored = copyMessage(message);
 //        deque.addLast(stored);
 //        trimHistory(conversationId, deque);
     @Transactional
@@ -400,39 +400,39 @@ public class ConversationService {
     }
 
     @Transactional
-        public void renameConversation(String conversationId, String userId, String title) {
-            AiConversation conversation = requireConversation(conversationId, userId);
-            LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
-                    .eq(AiConversation::getConversationId, conversationId)
-                    .set(AiConversation::getTitle, StringUtils.hasText(title) ? title.trim() : conversation.getTitle())
-                    .set(AiConversation::getUpdateTime, new Date());
-            conversationMapper.update(null, updateWrapper);
-        }
-
-
-        @Transactional
-        public void archiveConversation(String conversationId, String userId) {
-            requireConversation(conversationId, userId);
-            LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
-                    .eq(AiConversation::getConversationId, conversationId)
-                    .set(AiConversation::getStatus, ConversationStatus.ARCHIVED.name())
-                    .set(AiConversation::getArchivedAt, new Date())
-                    .set(AiConversation::getUpdateTime, new Date());
-            conversationMapper.update(null, updateWrapper);
-        }
-
-        @Transactional
-        public void restoreConversation(String conversationId, String userId) {
-            requireConversation(conversationId, userId);
-            LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
-                    .eq(AiConversation::getConversationId, conversationId)
-                    .set(AiConversation::getStatus, ConversationStatus.ACTIVE.name())
-                    .set(AiConversation::getArchivedAt, null)
-                    .set(AiConversation::getUpdateTime, new Date());
-            conversationMapper.update(null, updateWrapper);
+    public void renameConversation(String conversationId, String userId, String title) {
+        AiConversation conversation = requireConversation(conversationId, userId);
+        LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
+                .eq(AiConversation::getConversationId, conversationId)
+                .set(AiConversation::getTitle, StringUtils.hasText(title) ? title.trim() : conversation.getTitle())
+                .set(AiConversation::getUpdateTime, new Date());
+        conversationMapper.update(null, updateWrapper);
     }
 
-//    private void logHistory(String conversationId, Deque<ChatMessage> deque, String stage) {
+
+    @Transactional
+    public void archiveConversation(String conversationId, String userId) {
+        requireConversation(conversationId, userId);
+        LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
+                .eq(AiConversation::getConversationId, conversationId)
+                .set(AiConversation::getStatus, ConversationStatus.ARCHIVED.name())
+                .set(AiConversation::getArchivedAt, new Date())
+                .set(AiConversation::getUpdateTime, new Date());
+        conversationMapper.update(null, updateWrapper);
+    }
+
+    @Transactional
+    public void restoreConversation(String conversationId, String userId) {
+        requireConversation(conversationId, userId);
+        LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
+                .eq(AiConversation::getConversationId, conversationId)
+                .set(AiConversation::getStatus, ConversationStatus.ACTIVE.name())
+                .set(AiConversation::getArchivedAt, null)
+                .set(AiConversation::getUpdateTime, new Date());
+        conversationMapper.update(null, updateWrapper);
+    }
+
+    //    private void logHistory(String conversationId, Deque<ChatMessage> deque, String stage) {
 //        if (!log.isDebugEnabled()) {
 //            return;
 //        }
@@ -448,63 +448,63 @@ public class ConversationService {
 //            sb.append(" content=")
 //                    .append(message.getContent() == null ? "" : message.getContent().replace('\n', ' '))
 //                    .append(" | ");
-        @Transactional
-        public void deleteConversation(String conversationId, String userId) {
-            requireConversation(conversationId, userId);
-            Date now = new Date();
-            LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
-                    .eq(AiConversation::getConversationId, conversationId)
-                    .set(AiConversation::getStatus, ConversationStatus.DELETED.name())
-                    .set(AiConversation::getDeletedAt, now)
-                    .set(AiConversation::getUpdateTime, now);
-            conversationMapper.update(null, updateWrapper);
-        }
+    @Transactional
+    public void deleteConversation(String conversationId, String userId) {
+        requireConversation(conversationId, userId);
+        Date now = new Date();
+        LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
+                .eq(AiConversation::getConversationId, conversationId)
+                .set(AiConversation::getStatus, ConversationStatus.DELETED.name())
+                .set(AiConversation::getDeletedAt, now)
+                .set(AiConversation::getUpdateTime, now);
+        conversationMapper.update(null, updateWrapper);
+    }
 
-        private ChatMessage toChatMessage(AiMessage message) {
-            ChatMessage copy = new ChatMessage();
-            copy.setRole(message.getRole());
-            copy.setName(message.getName());
-            copy.setContent(message.getContent());
-            return copy;
-        }
+    private ChatMessage toChatMessage(AiMessage message) {
+        ChatMessage copy = new ChatMessage();
+        copy.setRole(message.getRole());
+        copy.setName(message.getName());
+        copy.setContent(message.getContent());
+        return copy;
+    }
 
-        private ConversationMessageDTO toDto(AiMessage message) {
-            return ConversationMessageDTO.builder()
-                    .messageId(message.getMessageId())
-                    .conversationId(message.getConversationId())
-                    .role(message.getRole())
-                    .name(message.getName())
-                    .content(message.getContent())
-                    .status(message.getStatus())
-                    .finishReason(message.getFinishReason())
-                    .promptTokens(message.getPromptTokens())
-                    .completionTokens(message.getCompletionTokens())
-                    .totalTokens(message.getTotalTokens())
-                    .errorMessage(message.getErrorMessage())
-                    .createTime(message.getCreateTime())
-                    .updateTime(message.getUpdateTime())
-                    .build();
-        }
+    private ConversationMessageDTO toDto(AiMessage message) {
+        return ConversationMessageDTO.builder()
+                .messageId(message.getMessageId())
+                .conversationId(message.getConversationId())
+                .role(message.getRole())
+                .name(message.getName())
+                .content(message.getContent())
+                .status(message.getStatus())
+                .finishReason(message.getFinishReason())
+                .promptTokens(message.getPromptTokens())
+                .completionTokens(message.getCompletionTokens())
+                .totalTokens(message.getTotalTokens())
+                .errorMessage(message.getErrorMessage())
+                .createTime(message.getCreateTime())
+                .updateTime(message.getUpdateTime())
+                .build();
+    }
 
-        public ConversationSummaryDTO toSummary(AiConversation conversation) {
-            return ConversationSummaryDTO.builder()
-                    .conversationId(conversation.getConversationId())
-                    .userId(conversation.getUserId())
-                    .title(conversation.getTitle())
-                    .status(conversation.getStatus())
-                    .messageCount(conversation.getMessageCount())
-                    .lastMessageTime(conversation.getLastMessageTime())
-                    .archivedAt(conversation.getArchivedAt())
-                    .deletedAt(conversation.getDeletedAt())
-                    .createTime(conversation.getCreateTime())
-                    .updateTime(conversation.getUpdateTime())
-                    .build();
-        }
+    public ConversationSummaryDTO toSummary(AiConversation conversation) {
+        return ConversationSummaryDTO.builder()
+                .conversationId(conversation.getConversationId())
+                .userId(conversation.getUserId())
+                .title(conversation.getTitle())
+                .status(conversation.getStatus())
+                .messageCount(conversation.getMessageCount())
+                .lastMessageTime(conversation.getLastMessageTime())
+                .archivedAt(conversation.getArchivedAt())
+                .deletedAt(conversation.getDeletedAt())
+                .createTime(conversation.getCreateTime())
+                .updateTime(conversation.getUpdateTime())
+                .build();
+    }
 
-        private String deriveTitle(String content) {
-            String normalized = content.replaceAll("\\s+", " ").trim();
-            if (normalized.length() <= 40) {
-                return normalized;
+    private String deriveTitle(String content) {
+        String normalized = content.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 40) {
+            return normalized;
         }
         return normalized.substring(0, 40) + "...";
     }

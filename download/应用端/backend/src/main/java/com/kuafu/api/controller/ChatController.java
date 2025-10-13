@@ -36,7 +36,7 @@ public class ChatController {
     private final ChatService chatService;
     private final ConversationService conversationService;
 
-//    public ChatController(ChatService chatService) {
+    //    public ChatController(ChatService chatService) {
 //        this.chatService = chatService;
 //    }
     public ChatController(ChatService chatService, ConversationService conversationService) {
@@ -44,7 +44,7 @@ public class ChatController {
         this.conversationService = conversationService;
     }
 
-//    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    //    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 //    public void stream(@RequestParam("q") String q, HttpServletResponse resp) throws IOException {
     @PostMapping(value = {"/chat", "/chat/send"}, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public void stream(@RequestBody ChatRequest req, HttpServletResponse resp) throws IOException {

@@ -11,17 +11,12 @@ import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.kuafu.common.deserializer.MultiDateDeserializer;
 import com.kuafu.common.entity.BaseEntity;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableName;
 /**
  * <p>健康问卷</p>
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("health_questionnaire")
 public class HealthQuestionnaireVO extends BaseEntity {
 
     @JsonProperty("healthQuestionnaireId")
