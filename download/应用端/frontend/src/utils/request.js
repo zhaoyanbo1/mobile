@@ -71,13 +71,13 @@ service.interceptors.response.use(
                     title: message || '系统出错',
                     icon: "none"
                 })
-                // ElMessage({
-                //     message: message || '系统出错',
-                //     type: 'error',
-                //     duration: 5 * 1000,
-                // });
+                ElMessage({
+                    message: message || '系统出错',
+                    type: 'error',
+                    duration: 5 * 1000,
+                });
             }
-            return Promise.reject(new Error(message || 'Error'));
+            return  Promise.reject(new Error(message || 'Error'));
         }
     },
     (error) => {

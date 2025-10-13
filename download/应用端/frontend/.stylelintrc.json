@@ -1,0 +1,9 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "unit-no-unknown": [true, { "ignoreUnits": ["rpx", "upx"] }],
+    "selector-pseudo-class-no-unknown": [true, { "ignorePseudoClasses": ["deep"] }],
+    "selector-pseudo-element-no-unknown": [true, { "ignorePseudoElements": ["v-deep"] }],
+    "at-rule-no-unknown": [true, { "ignoreAtRules": ["tailwind", "apply", "screen"] }]
+  }
+}

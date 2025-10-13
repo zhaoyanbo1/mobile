@@ -23,87 +23,89 @@
             }
     }] ,
 "subPackages":[{"root": "pagesA",
-"pages":[{
-        "path": "activity_recommendation_detail/index",
+"pages":[
+
+
+  {
+        "path": "care/index",
         "style":  {
                 "navigationBarTitleText": "",
                 "navigationStyle": "default",
 "enableShareAppMessage": true,
 "enableShareTimeline": true
             }
-    }, {
-        "path": "ai_chat/index",
+    },
+
+  {
+    "path": "care/questionare/index",
+    "style": {
+      "navigationBarTitleText": "Questionare"
+    }
+  },
+
+  {
+    "path": "care/report/index",
+    "style": {
+      "navigationBarTitleText": "Report"
+    }
+  },
+
+  {
+    "path": "chat/ai_chat/index",
+    "style": {
+      "navigationBarTitleText": "Chat Home"
+    }
+  },
+
+  {
+        "path": "chat/index",
         "style":  {
                 "navigationBarTitleText": "",
                 "navigationStyle": "default",
 "enableShareAppMessage": true,
 "enableShareTimeline": true
             }
-    }, {
-        "path": "calendar/index",
+    },
+
+  {
+        "path": "todo/index",
         "style":  {
                 "navigationBarTitleText": "",
                 "navigationStyle": "default",
 "enableShareAppMessage": true,
 "enableShareTimeline": true
             }
-    }, {
-        "path": "calendar_add_reminder/index",
+    },
+
+  {
+    "path": "todo/add_task/index",
+    "style": {
+      "navigationBarTitleText": "Add Task"
+    }
+  },
+  {
+    "path": "todo/show_modal/index",
+    "style": {
+      "navigationBarTitleText": "Show modal"
+    }
+  },
+  {
+    "path": "todo/win_modal/index",
+    "style": {
+      "navigationBarTitleText": "Win modal"
+    }
+  },
+  {
+        "path": "service/index",
         "style":  {
                 "navigationBarTitleText": "",
                 "navigationStyle": "default",
 "enableShareAppMessage": true,
 "enableShareTimeline": true
             }
-    }, {
-        "path": "calendar_edit_reminder/index",
-        "style":  {
-                "navigationBarTitleText": "",
-                "navigationStyle": "default",
-"enableShareAppMessage": true,
-"enableShareTimeline": true
-            }
-    }, {
-        "path": "diet_recommendation_detail/index",
-        "style":  {
-                "navigationBarTitleText": "",
-                "navigationStyle": "default",
-"enableShareAppMessage": true,
-"enableShareTimeline": true
-            }
-    }, {
-        "path": "health_questionnaire_update/index",
-        "style":  {
-                "navigationBarTitleText": "",
-                "navigationStyle": "default",
-"enableShareAppMessage": true,
-"enableShareTimeline": true
-            }
-    }, {
-        "path": "home/index",
-        "style":  {
-                "navigationBarTitleText": "",
-                "navigationStyle": "default",
-"enableShareAppMessage": true,
-"enableShareTimeline": true
-            }
-    }, {
-        "path": "profile/index",
-        "style":  {
-                "navigationBarTitleText": "",
-                "navigationStyle": "default",
-"enableShareAppMessage": true,
-"enableShareTimeline": true
-            }
-    }, {
-        "path": "recommend/index",
-        "style":  {
-                "navigationBarTitleText": "",
-                "navigationStyle": "default",
-"enableShareAppMessage": true,
-"enableShareTimeline": true
-            }
-    }]}],    "globalStyle": {
+    }
+
+]}],    "globalStyle": {
         "navigationBarTextStyle": "black",
         "navigationBarTitleText": "uni-app",
         "navigationBarBackgroundColor": "#F8F8F8",

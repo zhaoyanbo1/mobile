@@ -4,6 +4,7 @@ setTimeout(() => {
 document.documentElement.style.fontSize = `${fontSize*3.5}px`;
 }, 10);
 </script>
+
 <style>
 /*每个页面公共css */
 ::v-deep .uni-popup__wrapper{

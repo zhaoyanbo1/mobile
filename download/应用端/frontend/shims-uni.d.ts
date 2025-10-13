@@ -1,5 +1,6 @@
 /// <reference types='@dcloudio/types' />
 import 'vue'
+import App from "./src/App.vue";
 
 declare module '@vue/runtime-core' {
   type Hooks = App.AppInstance & Page.PageInstance;
