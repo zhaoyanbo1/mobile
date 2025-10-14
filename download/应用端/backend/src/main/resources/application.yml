@@ -28,7 +28,7 @@ spring:
     active: ${DB_TYPE:sqlite}
   jackson:
     date-format: "yyyy-MM-dd HH:mm:ss"
-    time-zone: GMT+8
+    time-zone: GMT+0
   redis:
     host: 114.116.233.39
     password: lmxderedis
@@ -115,10 +115,3 @@ openai:
   apiKey: ${OPENAI_API_KEY}     # 建议用环境变量注入，避免写死
   baseUrl: https://api.openai.com
   model: gpt-5
-#
-#
-#
-#spring:
-#  profiles:
-#    active: ${DB_TYPE:mysql}
-
