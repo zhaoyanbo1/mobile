@@ -45,6 +45,8 @@ public class ReminderItemVO  extends BaseEntity {
     private String locationLongitude;
     @JsonProperty("locationAddress")
     private String locationAddress;
+    @JsonProperty("priority")
+    private String priority;
     @JsonProperty("dietRecipeId")
     private Integer dietRecipeId;
     @JsonDeserialize(using = MultiDateDeserializer.class)

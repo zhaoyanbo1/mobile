@@ -25,38 +25,40 @@ import com.kuafu.common.entity.BaseEntity;
 @EqualsAndHashCode(callSuper = true)
 public class ReminderItemPageVO extends BaseEntity {
 
-@JsonProperty("reminderItemId")
+    @JsonProperty("reminderItemId")
     private Integer reminderItemId;
-@JsonProperty("userInfoUserInfoId1")
+    @JsonProperty("userInfoUserInfoId1")
     private Integer userInfoUserInfoId1;
-@JsonProperty("reminderTypeEnumId")
+    @JsonProperty("reminderTypeEnumId")
     private Integer reminderTypeEnumId;
-@JsonProperty("title")
+    @JsonProperty("title")
     private String title;
-@JsonProperty("description")
+    @JsonProperty("description")
     private String description;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("reminderTime")
+    @JsonProperty("reminderTime")
     private Date reminderTime;
-@JsonProperty("isCompleted")
+    @JsonProperty("isCompleted")
     private Boolean isCompleted;
-@JsonProperty("medicineDosage")
+    @JsonProperty("medicineDosage")
     private String medicineDosage;
-@JsonProperty("locationLatitude")
+    @JsonProperty("locationLatitude")
     private String locationLatitude;
-@JsonProperty("locationLongitude")
+    @JsonProperty("locationLongitude")
     private String locationLongitude;
-@JsonProperty("locationAddress")
+    @JsonProperty("locationAddress")
     private String locationAddress;
-@JsonProperty("dietRecipeId")
+    @JsonProperty("priority")
+    private String priority;
+    @JsonProperty("dietRecipeId")
     private Integer dietRecipeId;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("creationTime")
+    @JsonProperty("creationTime")
     private Date creationTime;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("updateTime")
+    @JsonProperty("updateTime")
     private Date updateTime;
 
-private List<StaticResource> medicinePhoto;
+    private List<StaticResource> medicinePhoto;
 
 }

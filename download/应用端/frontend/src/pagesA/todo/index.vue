@@ -72,7 +72,7 @@
 
 <script setup>
 import { ref, computed, getCurrentInstance } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onUnload } from '@dcloudio/uni-app'
 import menuIcon from '@/static/gg_menu-left-alt.svg'
 import chestIcon from '@/static/box.svg'
 import medalIcon from '@/static/safe.svg'
@@ -126,6 +126,30 @@ async function fetchReminders () {
     loading.value = false
   }
 }
+function handleTodoCreated (todo) {
+  if (!todo) {
+    return
+  }
+  const dueAt = todo.dueAt || todo.due_at
+  if (!dueAt) {
+    return
+  }
+  const dueDate = toDate(dueAt)
+  const { start, end } = getTodayRange()
+  if (dueDate < start || dueDate > end) {
+    return
+  }
+  reminders.value = [
+    ...reminders.value,
+    {
+      reminder_item_id: todo.reminderItemId || todo.reminder_item_id,
+      reminder_time: dueAt,
+      title: todo.title || '',
+      is_completed: false,
+    }
+  ]
+}
+
 
 /* 映射成显示项 */
 const dayTasks = computed(() =>
@@ -225,7 +249,14 @@ function formatTime (dt) {
 }
 
 /* 初始化：直接加载今日任务 */
-onLoad(() => { fetchReminders() })
+onLoad(() => {
+  fetchReminders()
+  uni.$on('todo:created', handleTodoCreated)
+})
+
+onUnload(() => {
+  uni.$off?.('todo:created', handleTodoCreated)
+})
 </script>
 
 <style scoped>

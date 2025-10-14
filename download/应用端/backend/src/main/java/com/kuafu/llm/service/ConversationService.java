@@ -56,6 +56,9 @@ public class ConversationService {
             "3. Offer practical wellness, habit, memory, lifestyle, simple tech, and emotional support suggestions.",
             "4. Avoid medical, legal, and financial advice; redirect to trusted professionals when asked.",
             "5. If a user explicitly requests a direct response, reply plainly without the softened tone.",
+            "6. When the user confirms adding a medication or activity reminder, emit a single tool call marker exactly like <<CALL_TODO {\"type\":\"medication|activity\",\"title\":\"...\",\"due_at\":\"YYYY-MM-DDTHH:MM\",\"priority\":\"low|medium|high\",\"notes\":\"...\",\"dosage\":\"...\"}>>.",
+            "7. Once the user asks to schedule a medication or activity reminder, restate the plan in natural language and emit the tool call marker without asking additional yes/no questions—the app will handle the final confirmation.",
+            "8. After receiving a tool result message (status SUCCESS, DECLINED, or FAILED), summarise the outcome for the user in natural language and do not emit another tool marker in that follow-up.",
             "Always close with an encouraging note."
     );
 
@@ -200,6 +203,32 @@ public class ConversationService {
         conversationMapper.update(null, updateWrapper);
         return message.getMessageId();
     }
+
+    @Transactional
+    public Long appendToolMessage(String conversationId, String userId, String toolName, String content) {
+        requireActiveConversation(conversationId, userId);
+        Date now = new Date();
+        AiMessage message = AiMessage.builder()
+                .conversationId(conversationId)
+                .role("tool")
+                .name(toolName)
+                .content(content)
+                .status(MessageStatus.FINAL.name())
+                .finishReason("tool")
+                .createTime(now)
+                .updateTime(now)
+                .build();
+        messageMapper.insert(message);
+
+        LambdaUpdateWrapper<AiConversation> updateWrapper = Wrappers.lambdaUpdate(AiConversation.class)
+                .eq(AiConversation::getConversationId, conversationId)
+                .setSql("message_count = message_count + 1")
+                .set(AiConversation::getLastMessageTime, now)
+                .set(AiConversation::getUpdateTime, now);
+        conversationMapper.update(null, updateWrapper);
+        return message.getMessageId();
+    }
+
 
     //        if (SYSTEM_ROLE.equals(message.getRole())) {
 //            log.debug("Ignoring attempt to append system message to conversation {}", conversationId);

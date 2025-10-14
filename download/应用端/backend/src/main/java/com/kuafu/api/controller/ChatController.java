@@ -1,8 +1,12 @@
 package com.kuafu.api.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuafu.api.dto.ChatRequest;
+import com.kuafu.api.dto.TodoToolCallPayload;
 import com.kuafu.common.exception.BusinessException;
+import com.kuafu.llm.entity.AiActionLog;
 import com.kuafu.llm.model.ChatMessage;
+import com.kuafu.llm.service.AiActionLogService;
 import com.kuafu.llm.service.ChatService;
 import com.kuafu.llm.service.ConversationService;
 import com.kuafu.llm.util.TokenUtils;
@@ -21,7 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Chat API that keeps conversation context by conversationId.
@@ -33,15 +41,23 @@ import java.util.List;
 public class ChatController {
 
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
+    private static final String TODO_TOOL_NAME = "todo.create";
+    private static final Pattern TOOL_PATTERN = Pattern.compile("<<CALL_TODO\\s*(\\{.*?})\\s*>>", Pattern.DOTALL);
+    private static final Pattern TRAILING_CONFIRMATION_PATTERN = Pattern.compile(
+            "(?i)(\\s*(?:shall|should|would|can|could|may|might)\\b[^?]*\\?\\s*$|\\s*let me know[^.?!]*[.!?]\\s*$)"
+    );
     private final ChatService chatService;
     private final ConversationService conversationService;
+    private final AiActionLogService actionLogService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     //    public ChatController(ChatService chatService) {
 //        this.chatService = chatService;
 //    }
-    public ChatController(ChatService chatService, ConversationService conversationService) {
+    public ChatController(ChatService chatService, ConversationService conversationService, AiActionLogService actionLogService) {
         this.chatService = chatService;
         this.conversationService = conversationService;
+        this.actionLogService = actionLogService;
     }
 
     //    @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -143,10 +159,12 @@ public class ChatController {
                 writer.write("data: " + payload + "\n\n");
                 writer.flush();
             }));
-            int completionTokens = TokenUtils.estimateTokens(answerBuilder.toString());
+            String finalText = handleToolCallEvent(writer, conversationId, userId, answerBuilder.toString());
+            conversationService.updateAssistantMessageContent(assistantMessageId, finalText);
+            int completionTokens = TokenUtils.estimateTokens(finalText);
             conversationService.finalizeAssistantMessage(
                     assistantMessageId,
-                    answerBuilder.toString(),
+                    finalText,
                     promptTokens,
                     completionTokens,
                     "stop"
@@ -186,5 +204,55 @@ public class ChatController {
                     .append(" | ");
         }
         log.debug(sb.toString());
+    }
+
+    private String handleToolCallEvent(PrintWriter writer, String conversationId, String userId, String text) {
+        Matcher matcher = TOOL_PATTERN.matcher(text);
+        if (!matcher.find()) {
+            return text;
+        }
+        String json = matcher.group(1);
+        String rawSanitized = matcher.replaceFirst("").trim();
+        String sanitized = stripTrailingConfirmation(rawSanitized);
+        if (!StringUtils.hasText(sanitized)) {
+            sanitized = rawSanitized;
+        }
+        try {
+            TodoToolCallPayload payload = objectMapper.readValue(json, TodoToolCallPayload.class);
+            AiActionLog log = actionLogService.createPendingLog(conversationId, userId, TODO_TOOL_NAME, json);
+            emitToolCallEvent(writer, conversationId, sanitized, payload, log.getId());
+        } catch (Exception ex) {
+            log.warn("Failed to process tool call payload", ex);
+        }
+        return sanitized;
+    }
+
+    private void emitToolCallEvent(PrintWriter writer, String conversationId, String sanitizedText,
+                                   TodoToolCallPayload payload, Long actionLogId) {
+        try {
+            Map<String, Object> event = new HashMap<>();
+            event.put("conversationId", conversationId);
+            event.put("tool", TODO_TOOL_NAME);
+            event.put("actionLogId", actionLogId);
+            event.put("request", payload);
+            event.put("sanitizedText", sanitizedText);
+            String data = objectMapper.writeValueAsString(event);
+            writer.write("event: tool_call\n");
+            writer.write("data: " + data + "\n\n");
+            writer.flush();
+        } catch (IOException e) {
+            log.warn("Failed to emit tool call event", e);
+        }
+    }
+
+    private String stripTrailingConfirmation(String text) {
+        if (!StringUtils.hasText(text)) {
+            return text;
+        }
+        Matcher confirmationMatcher = TRAILING_CONFIRMATION_PATTERN.matcher(text);
+        if (confirmationMatcher.find()) {
+            return text.substring(0, confirmationMatcher.start()).trim();
+        }
+        return text;
     }
 }

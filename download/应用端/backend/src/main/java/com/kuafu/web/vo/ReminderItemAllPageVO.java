@@ -27,47 +27,49 @@ import com.kuafu.common.entity.StaticResource;
 public class ReminderItemAllPageVO extends BaseEntity {
 
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("reminderTime")
+    @JsonProperty("reminderTime")
     private Date reminderTime;
-@JsonProperty("locationAddress")
+    @JsonProperty("locationAddress")
     private String locationAddress;
+    @JsonProperty("priority")
+    private String priority;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("creationTime")
+    @JsonProperty("creationTime")
     private Date creationTime;
-@JsonProperty("userInfoUserInfoId1")
+    @JsonProperty("userInfoUserInfoId1")
     private Integer userInfoUserInfoId1;
-@JsonProperty("locationLatitude")
+    @JsonProperty("locationLatitude")
     private String locationLatitude;
-@JsonProperty("description")
+    @JsonProperty("description")
     private String description;
-@JsonProperty("title")
+    @JsonProperty("title")
     private String title;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("lastLoginDate")
+    @JsonProperty("lastLoginDate")
     private Date lastLoginDate;
-@JsonProperty("isCompleted")
+    @JsonProperty("isCompleted")
     private Boolean isCompleted;
-@JsonProperty("medicineDosage")
+    @JsonProperty("medicineDosage")
     private String medicineDosage;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("updateTime")
+    @JsonProperty("updateTime")
     private Date updateTime;
-@JsonProperty("password")
+    @JsonProperty("password")
     private String password;
     @JsonDeserialize(using = MultiDateDeserializer.class)
-@JsonProperty("registrationDate")
+    @JsonProperty("registrationDate")
     private Date registrationDate;
-@JsonProperty("reminderItemId")
+    @JsonProperty("reminderItemId")
     private Integer reminderItemId;
-@JsonProperty("dietRecipeId")
+    @JsonProperty("dietRecipeId")
     private Integer dietRecipeId;
-@JsonProperty("phoneNumber")
+    @JsonProperty("phoneNumber")
     private String phoneNumber;
-@JsonProperty("reminderTypeEnumId")
+    @JsonProperty("reminderTypeEnumId")
     private Integer reminderTypeEnumId;
-@JsonProperty("locationLongitude")
+    @JsonProperty("locationLongitude")
     private String locationLongitude;
-@JsonProperty("username")
+    @JsonProperty("username")
     private String username;
 
 }

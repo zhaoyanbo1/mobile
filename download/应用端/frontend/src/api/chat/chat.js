@@ -22,4 +22,18 @@ export default {
             params,
         })
     },
+    executeTodoTool(data) {
+        return service({
+            url: '/chat/tools/todos/execute',
+            method: 'post',
+            data,
+        })
+    },
+    declineTodoTool(data) {
+        return service({
+            url: '/chat/tools/todos/decline',
+            method: 'post',
+            data,
+        })
+    },
 }

@@ -35,6 +35,9 @@ public class ReminderItemAll {
     @TableField(value="ri.location_address")
     @JsonProperty("location_address")
     private String locationAddress;
+    @TableField(value="ri.priority")
+    @JsonProperty("priority")
+    private String priority;
     @TableField(value="ri.creation_time")
     @JsonProperty("creation_time")
     private Date creationTime;
@@ -88,9 +91,9 @@ public class ReminderItemAll {
     private String username;
 
 
-@TableField(value="medicine_photo")
-@JsonProperty("medicine_photo")
-private List<StaticResource> medicinePhoto;
+    @TableField(value="medicine_photo")
+    @JsonProperty("medicine_photo")
+    private List<StaticResource> medicinePhoto;
 
 
 
