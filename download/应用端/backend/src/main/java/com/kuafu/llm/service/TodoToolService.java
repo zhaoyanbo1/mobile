@@ -17,9 +17,11 @@ import com.kuafu.web.service.IReminderItemService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
@@ -118,7 +120,7 @@ public class TodoToolService {
         if (!StringUtils.hasText(title)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "Todo title is required");
         }
-        Date dueTime = parseDueAt(payload.getDueAt());
+        Date dueTime = parseDueAt(payload.getDueAt(), payload.getTimezone(), payload.getUtcOffsetMinutes());
         if (dueTime == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "Invalid due_at format");
         }
@@ -155,11 +157,13 @@ public class TodoToolService {
         throw new BusinessException(ErrorCode.PARAMS_ERROR, "Unsupported todo type: " + type);
     }
 
-    private Date parseDueAt(String dueAt) {
+    private Date parseDueAt(String dueAt, String timezoneId, Integer utcOffsetMinutes) {
         if (!StringUtils.hasText(dueAt)) {
             return null;
         }
         String trimmed = dueAt.trim();
+        ZoneId zone = resolveZone(timezoneId, utcOffsetMinutes);
+        ZoneId effectiveZone = zone != null ? zone : ZoneId.systemDefault();
         for (DateTimeFormatter formatter : DATE_PATTERNS) {
             try {
                 if (formatter == DateTimeFormatter.ISO_OFFSET_DATE_TIME) {
@@ -167,8 +171,25 @@ public class TodoToolService {
                     return Date.from(odt.toInstant());
                 }
                 LocalDateTime ldt = LocalDateTime.parse(trimmed, formatter);
-                return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+                return Date.from(ldt.atZone(effectiveZone).toInstant());
             } catch (DateTimeParseException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private ZoneId resolveZone(String timezoneId, Integer utcOffsetMinutes) {
+        if (StringUtils.hasText(timezoneId)) {
+            try {
+                return ZoneId.of(timezoneId.trim());
+            } catch (DateTimeException ignored) {
+            }
+        }
+        if (utcOffsetMinutes != null) {
+            try {
+                int seconds = Math.multiplyExact(-utcOffsetMinutes, 60);
+                return ZoneOffset.ofTotalSeconds(seconds);
+            } catch (ArithmeticException | DateTimeException ignored) {
             }
         }
         return null;

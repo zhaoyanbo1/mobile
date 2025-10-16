@@ -25,4 +25,10 @@ public class ChatRequest {
 
     /** legacy field: recent history sent from client */
     private List<ChatMessage> messages;
+
+    /** optional client-reported IANA timezone id */
+    private String timezone;
+
+    /** optional client-reported UTC offset in minutes (JavaScript style) */
+    private Integer utcOffsetMinutes;
 }

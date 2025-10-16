@@ -25,6 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.DateTimeException;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,8 +64,11 @@ public class ConversationService {
             "6. When the user confirms adding a medication or activity reminder, emit a single tool call marker exactly like <<CALL_TODO {\"type\":\"medication|activity\",\"title\":\"...\",\"due_at\":\"YYYY-MM-DDTHH:MM\",\"priority\":\"low|medium|high\",\"notes\":\"...\",\"dosage\":\"...\"}>>.",
             "7. Once the user asks to schedule a medication or activity reminder, restate the plan in natural language and emit the tool call marker without asking additional yes/no questions—the app will handle the final confirmation.",
             "8. After receiving a tool result message (status SUCCESS, DECLINED, or FAILED), summarise the outcome for the user in natural language and do not emit another tool marker in that follow-up.",
+            "9. If a user mentions a preference for a certain food, provide the user with healthy recipes related to that food, and review the historical records at the same time to avoid foods that the user dislikes or is allergic to",
             "Always close with an encouraging note."
     );
+    private static final DateTimeFormatter SYSTEM_DATE = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH);
+    private static final DateTimeFormatter SYSTEM_TIME = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH);
 
     //    private final Map<String, Deque<ChatMessage>> store = Collections.synchronizedMap(
 //            new LinkedHashMap<String, Deque<ChatMessage>>(16, 0.75f, true) {
@@ -312,11 +320,15 @@ public class ConversationService {
 //        if (deque == null) {
 //            return Collections.emptyList();
     public List<ChatMessage> getMessagesForPrompt(String conversationId) {
+        return getMessagesForPrompt(conversationId, null);
+    }
+
+    public List<ChatMessage> getMessagesForPrompt(String conversationId, ZoneId zone) {
         List<ChatMessage> result = new ArrayList<>();
         ChatMessage system = new ChatMessage();
         system.setRole(SYSTEM_ROLE);
         system.setName(SYSTEM_NAME);
-        system.setContent(SYSTEM_PROMPT);
+        system.setContent(buildDynamicSystemPrompt());
         result.add(system);
 
         List<AiMessage> latest = messageMapper.selectList(Wrappers.lambdaQuery(AiMessage.class)
@@ -331,14 +343,25 @@ public class ConversationService {
         }
         return result;
     }
+    private String buildDynamicSystemPrompt() {
+        ZonedDateTime now = ZonedDateTime.now();
+        return SYSTEM_PROMPT + "\nCurrent date: " + now.format(SYSTEM_DATE)
+                + ". Current time: " + now.format(SYSTEM_TIME)
+                + " (" + now.getZone().getId() + ")."
+                + " Use this timestamp when interpreting relative dates (today, tonight, tomorrow) and generate due_at values accordingly.";
+    }
 
     /** build text prompt from conversation history */
     public String buildPrompt(String conversationId) {
+        return buildPrompt(conversationId, null);
+    }
+
+    public String buildPrompt(String conversationId, ZoneId zone) {
         StringBuilder sb = new StringBuilder();
 //        for (ChatMessage m : getMessages(conversationId)) {
 //            //sb.append(m.getRole()).append(": ").append(m.getContent()).append("\n");
 //            if (!StringUtils.hasText(m.getContent())) {
-        for (ChatMessage message : getMessagesForPrompt(conversationId)) {
+        for (ChatMessage message : getMessagesForPrompt(conversationId, zone)) {
             if (!StringUtils.hasText(message.getContent())) {
                 continue;
             }
@@ -350,6 +373,24 @@ public class ConversationService {
             sb.append(": ").append(message.getContent()).append("\n");
         }
         return sb.toString();
+    }
+
+    public ZoneId resolveUserZone(String timezoneId, Integer utcOffsetMinutes) {
+        if (StringUtils.hasText(timezoneId)) {
+            try {
+                return ZoneId.of(timezoneId.trim());
+            } catch (DateTimeException ignored) {
+            }
+        }
+        if (utcOffsetMinutes != null) {
+            try {
+                int seconds = Math.multiplyExact(-utcOffsetMinutes, 60);
+                ZoneOffset offset = ZoneOffset.ofTotalSeconds(seconds);
+                return offset;
+            } catch (ArithmeticException | DateTimeException ignored) {
+            }
+        }
+        return ZoneId.systemDefault();
     }
     public List<ConversationMessageDTO> getRecentMessages(String conversationId) {
         List<AiMessage> messages = messageMapper.selectList(Wrappers.lambdaQuery(AiMessage.class)

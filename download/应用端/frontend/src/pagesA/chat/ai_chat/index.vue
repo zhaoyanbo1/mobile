@@ -117,6 +117,9 @@ const loading = ref(false)
 const scrollRef = ref(null)
 // let es = null
 const conversationId = ref('')
+const conversationCache = ref(null)
+const CONVERSATION_CACHE_KEY = 'ai_chat_conversation'
+const CONVERSATION_MAX_AGE_MS = 12 * 60 * 60 * 1000 // 12 hours
 // const HISTORY_LIMIT = 10
 // let ctrl = null
 const streamingMessage = ref(null)
@@ -292,10 +295,51 @@ const stopStream = () => {
   }
   loading.value = false
 }
+const readConversationCache = () => {
+  if (typeof window === 'undefined') {
+    return null
+  }
+  try {
+    const raw = localStorage.getItem(CONVERSATION_CACHE_KEY)
+    if (!raw) {
+      return null
+    }
+    const parsed = JSON.parse(raw)
+    if (!parsed?.id || !parsed?.createdAt) {
+      return null
+    }
+    const createdAt = new Date(parsed.createdAt)
+    if (Number.isNaN(createdAt.getTime())) {
+      return null
+    }
+    if (Date.now() - createdAt.getTime() > CONVERSATION_MAX_AGE_MS) {
+      return null
+    }
+    return { id: parsed.id, createdAt: parsed.createdAt }
+  } catch (error) {
+    console.warn('Failed to read cached conversation', error)
+    return null
+  }
+}
+
+const isConversationFresh = () => {
+  if (!conversationCache.value?.createdAt) {
+    return false
+  }
+  const createdAt = new Date(conversationCache.value.createdAt)
+  if (Number.isNaN(createdAt.getTime())) {
+    return false
+  }
+  return Date.now() - createdAt.getTime() <= CONVERSATION_MAX_AGE_MS
+}
+
 
 const ensureConversation = async (titleHint) => {
-  if (conversationId.value) {
+  if (conversationId.value && isConversationFresh()) {
     return conversationId.value
+  }
+  if (conversationId.value && !isConversationFresh()) {
+    conversationId.value = ''
   }
   const res = await proxy?.$cf?.chat?.createConversation({
     userId: userId.value,
@@ -374,6 +418,18 @@ const send = async () => {
     conversationId: conversationId.value,
     userId: userId.value,
   }
+  try {
+    const tzOptions = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions() : null
+    if (tzOptions?.timeZone) {
+      payload.timezone = tzOptions.timeZone
+    }
+    const offsetMinutes = new Date().getTimezoneOffset()
+    if (!Number.isNaN(offsetMinutes)) {
+      payload.utcOffsetMinutes = offsetMinutes
+    }
+  } catch (error) {
+    console.warn('Failed to capture timezone info', error)
+  }
 
   ctrl = new AbortController()
   fetchEventSource(makeUrl('/chat/send'), {
@@ -427,6 +483,7 @@ const newConversation = () => {
   finalizeStream({ cancelled: true })
   stopStream()
   conversationId.value = ''
+  conversationCache.value = null
   messages.value = []
   historyCursor.value = null
   hasMoreHistory.value = true
@@ -661,22 +718,35 @@ watch(conversationId, (id) => {
   if (typeof window === 'undefined') {
     return
   }
-  if (id) {
-    localStorage.setItem('conversationId', id)
-  } else {
-    localStorage.removeItem('conversationId')
+  if (!id) {
+    localStorage.removeItem(CONVERSATION_CACHE_KEY)
+    conversationCache.value = null
+    return
+  }
+  const existing = conversationCache.value
+  const createdAt = existing?.id === id && existing?.createdAt
+      ? existing.createdAt
+      : new Date().toISOString()
+  const payload = { id, createdAt }
+  conversationCache.value = payload
+  try {
+    localStorage.setItem(CONVERSATION_CACHE_KEY, JSON.stringify(payload))
+  } catch (error) {
+    console.warn('Failed to persist conversation cache', error)
   }
 })
 onLoad(async (options) => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('chatMessages')
+    localStorage.removeItem('conversationId')
   }
   if (options?.conversationId) {
     conversationId.value = options.conversationId
   } else if (!conversationId.value && typeof window !== 'undefined') {
-    const savedId = localStorage.getItem('conversationId')
-    if (savedId) {
-      conversationId.value = savedId
+    const cached = readConversationCache()
+    if (cached) {
+      conversationCache.value = cached
+      conversationId.value = cached.id
     }
   }
   try {

@@ -14,4 +14,9 @@ public class TodoToolCallPayload {
     private String priority;
     private String notes;
     private String dosage;
+
+    private String timezone;
+
+    @JsonAlias({"utc_offset_minutes", "utcOffsetMinutes"})
+    private Integer utcOffsetMinutes;
 }

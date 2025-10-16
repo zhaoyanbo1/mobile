@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +104,7 @@ public class ChatController {
 //        userMsg.setRole("user");
 //        userMsg.setContent(req.getQuery());
 //        conversationService.addMessage(conversationId, userMsg);
+        ZoneId userZone = conversationService.resolveUserZone(req.getTimezone(), req.getUtcOffsetMinutes());
 
         // send conversationId event so client can persist
         writer.write("event: conversation\n");
@@ -120,10 +123,10 @@ public class ChatController {
             return;
         }
 
-        List<ChatMessage> messages = conversationService.getMessagesForPrompt(conversationId);
+        List<ChatMessage> messages = conversationService.getMessagesForPrompt(conversationId, userZone);
         logConversationState(conversationId, messages);
 
-        String prompt = conversationService.buildPrompt(conversationId);
+        String prompt = conversationService.buildPrompt(conversationId, userZone);
         int promptTokens = TokenUtils.estimateTokens(prompt);
 
         Long assistantMessageId;
@@ -159,7 +162,15 @@ public class ChatController {
                 writer.write("data: " + payload + "\n\n");
                 writer.flush();
             }));
-            String finalText = handleToolCallEvent(writer, conversationId, userId, answerBuilder.toString());
+            String finalText = handleToolCallEvent(
+                    writer,
+                    conversationId,
+                    userId,
+                    answerBuilder.toString(),
+                    userZone,
+                    req.getTimezone(),
+                    req.getUtcOffsetMinutes()
+            );
             conversationService.updateAssistantMessageContent(assistantMessageId, finalText);
             int completionTokens = TokenUtils.estimateTokens(finalText);
             conversationService.finalizeAssistantMessage(
@@ -206,7 +217,13 @@ public class ChatController {
         log.debug(sb.toString());
     }
 
-    private String handleToolCallEvent(PrintWriter writer, String conversationId, String userId, String text) {
+    private String handleToolCallEvent(PrintWriter writer,
+                                       String conversationId,
+                                       String userId,
+                                       String text,
+                                       ZoneId userZone,
+                                       String timezoneId,
+                                       Integer utcOffsetMinutes) {
         Matcher matcher = TOOL_PATTERN.matcher(text);
         if (!matcher.find()) {
             return text;
@@ -219,13 +236,45 @@ public class ChatController {
         }
         try {
             TodoToolCallPayload payload = objectMapper.readValue(json, TodoToolCallPayload.class);
-            AiActionLog log = actionLogService.createPendingLog(conversationId, userId, TODO_TOOL_NAME, json);
+            applyTimezoneDefaults(payload, userZone, timezoneId, utcOffsetMinutes);
+            String enrichedJson = json;
+            try {
+                enrichedJson = objectMapper.writeValueAsString(payload);
+            } catch (Exception ex) {
+                log.warn("Failed to enrich tool payload with timezone", ex);
+            }
+            AiActionLog log = actionLogService.createPendingLog(conversationId, userId, TODO_TOOL_NAME, enrichedJson);
             emitToolCallEvent(writer, conversationId, sanitized, payload, log.getId());
         } catch (Exception ex) {
             log.warn("Failed to process tool call payload", ex);
         }
         return sanitized;
     }
+
+    private void applyTimezoneDefaults(TodoToolCallPayload payload,
+                                       ZoneId userZone,
+                                       String timezoneId,
+                                       Integer utcOffsetMinutes) {
+        if (payload == null) {
+            return;
+        }
+        if (!StringUtils.hasText(payload.getTimezone())) {
+            if (userZone != null) {
+                payload.setTimezone(userZone.getId());
+            } else if (StringUtils.hasText(timezoneId)) {
+                payload.setTimezone(timezoneId);
+            }
+        }
+        if (payload.getUtcOffsetMinutes() == null) {
+            if (utcOffsetMinutes != null) {
+                payload.setUtcOffsetMinutes(utcOffsetMinutes);
+            } else if (userZone != null) {
+                int offsetMinutes = -(userZone.getRules().getOffset(Instant.now()).getTotalSeconds() / 60);
+                payload.setUtcOffsetMinutes(offsetMinutes);
+            }
+        }
+    }
+
 
     private void emitToolCallEvent(PrintWriter writer, String conversationId, String sanitizedText,
                                    TodoToolCallPayload payload, Long actionLogId) {
