@@ -2,30 +2,44 @@
   <div class="chat-wrap">
     <!-- 顶部栏 -->
     <view class="topbar">
-      <button class="back" @click="goBack" aria-label="Back">‹</button>
-      <text class="title">AI Chat</text>
-      <view class="spacer"></view>
-      <button class="new" @click="newConversation">New</button>
+      <button class="back-button" @click="goBack" aria-label="Back">
+        <span aria-hidden="true">←</span>
+      </button>
+      <text class="topbar-title">LiveWell Coach</text>
+<!--      <button-->
+<!--          class="topbar-action"-->
+<!--          @click="newConversation"-->
+<!--          aria-label="New"-->
+<!--          title="New"-->
+<!--      >-->
+<!--        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">-->
+<!--          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>-->
+<!--        </svg>-->
+<!--      </button>-->
     </view>
 
     <!-- 消息区 -->
     <main ref="scrollRef" class="messages" @scroll.passive="handleScroll">
-      <div v-if="historyLoading" class="history-loading">正在加载历史...</div>
-      <div v-for="m in messages" :key="m.id" class="row" :class="m.role">
+      <div v-if="historyLoading" class="history-loading">Loading history...</div>
+      <div v-for="m in messages" :key="m.id" class="message-row" :class="m.role">
         <template v-if="m.role === 'assistant'">
-          <img class="avatar" :src="avatarUrl" alt="assistant" />
+          <img class="avatar assistant-avatar" :src="avatarUrl" alt="assistant" />
           <div class="bubble assistant-bubble" :class="{ 'is-error': m.status === 'ERROR', 'is-streaming': m.streaming }">
-            <template v-if="m.text">
-              {{ m.text }}<span v-if="m.streaming" class="cursor"></span>
-            </template>
-            <template v-else>
+            <div class="bubble-text">
+              <template v-if="m.text">
+                {{ formatAssistantText(m.text) }}
+              </template>
+              <template v-else>&nbsp;</template>
               <span v-if="m.streaming" class="cursor"></span>
-            </template>
+            </div>
             <div v-if="m.status === 'ERROR' && m.errorMessage" class="error-text">{{ m.errorMessage }}</div>
           </div>
         </template>
         <template v-else>
-          <div class="bubble user-bubble">{{ m.text }}</div>
+          <img class="avatar user-avatar" :src="userAvatarUrl" alt="user" />
+          <div class="bubble user-bubble">
+            <div class="bubble-text">{{ m.text }}</div>
+          </div>
         </template>
       </div>
 
@@ -38,20 +52,38 @@
 
     <!-- 底部输入栏 -->
     <footer class="composer">
-      <button class="tool-btn" title="Camera" aria-label="Camera">
-        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 7h3l2-2h6l2 2h3v12H4z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-      </button>
-      <input
-          class="input"
-          v-model="input"
-          :disabled="loading"
-          placeholder="Type a message..."
-          @keydown.enter.exact.prevent="send"
-      />
-      <button class="tool-btn" title="Voice" aria-label="Voice" @click="toggleRecording" :class="{active: isRecording}">
-        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 11a7 7 0 0 1-14 0M12 19v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
-      <button class="send-btn" :disabled="loading || !input.trim()" @click="send">Send</button>
+      <div class="composer-surface">
+        <button
+            class="icon-button mic-button"
+            title="Voice input"
+            aria-label="Voice input"
+            @click="toggleRecording"
+            :class="{ active: isRecording }"
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M19 11a7 7 0 0 1-14 0M12 19v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <input
+            class="composer-input"
+            v-model="input"
+            :disabled="loading"
+            placeholder="What would you like to talk about?"
+            @keydown.enter.exact.prevent="send"
+        />
+        <button
+            class="icon-button send-action"
+            :disabled="loading || !input.trim()"
+            @click="send"
+            title="Send"
+            aria-label="Send"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M4 4l16 8-16 8 4-8-4-8z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
     </footer>
     <view v-if="pendingToolCall" class="tool-modal-backdrop" role="dialog" aria-modal="true">
       <view class="tool-modal">
@@ -100,10 +132,48 @@
 // import {ref, nextTick, onBeforeUnmount, getCurrentInstance} from 'vue'
 import {ref, nextTick, onBeforeUnmount, getCurrentInstance, onMounted, watch} from 'vue'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
+import { marked } from 'marked'
 import { voiceBus } from '@/voice/bus'
 
 // 头像：随便用一张本地图、CDN、或 emoji 占位
 const avatarUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9d1-1f3fb-200d-1f9af.svg'
+const userAvatarUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f464.svg'
+
+marked.setOptions({
+  mangle: false,
+  headerIds: false,
+  breaks: true,
+})
+
+let domParser = null
+
+const ensureDomParser = () => {
+  if (typeof window === 'undefined') {
+    return null
+  }
+  if (!domParser) {
+    domParser = new DOMParser()
+  }
+  return domParser
+}
+
+const formatAssistantText = (text) => {
+  const source = typeof text === 'string' ? text : ''
+  if (!source) {
+    return ''
+  }
+  try {
+    const html = marked.parse(source)
+    const parser = ensureDomParser()
+    if (parser) {
+      const doc = parser.parseFromString(html, 'text/html')
+      return doc.body?.textContent || ''
+    }
+    return html.replace(/<[^>]*>/g, ' ')
+  } catch (error) {
+    return source
+  }
+}
 
 const { proxy } = getCurrentInstance()
 
@@ -787,116 +857,177 @@ voiceBus.on('voice:ended', (id) => {
 }
 
 .chat-wrap {
-  height: 100vh;
-  display: grid;
-  grid-template-rows: 56px 1fr auto;
-  background: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #F8F7F2;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
 /* 顶部栏 */
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  border-bottom: 1px solid #f1f1f1;
-  background: #fff;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 12px;
+  background: #F8F7F2;
 }
 
-.topbar .back {
+.back-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   border: none;
-  background: transparent;
-  padding: 8px;
+  background: rgba(122, 143, 119, 0.16);
+  color: #7A8F77;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.topbar .title {
+.back-button:focus-visible,
+.topbar-action:focus-visible,
+.icon-button:focus-visible {
+  outline: 2px solid rgba(122, 143, 119, 0.45);
+  outline-offset: 2px;
+}
+
+.back-button:active {
+  background: rgba(122, 143, 119, 0.28);
+}
+
+.topbar-title {
   flex: 1;
   text-align: center;
+  font-size: 20px;
   font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #2F3D2F;
 }
 
-.topbar .spacer {
-  width: 32px;
+.topbar-action {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(122, 143, 119, 0.16);
+  color: #7A8F77;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
-.topbar .new {
-  margin-left: 8px;
-  padding: 8px;
+
+.topbar-action:active {
+  background: rgba(122, 143, 119, 0.28);
 }
 
 
 /* 消息列表 */
 .messages {
+  flex: 1;
   overflow-y: auto;
-  padding: 12px 14px 90px;
-  background: #fafafa;
+  padding: 16px 20px 160px;
+  background: transparent;
 }
 .history-loading {
   text-align: center;
-  color: #9ca3af;
-  font-size: 12px;
-  margin: 4px 0 12px;
+  color: rgba(49, 65, 49, 0.6);
+  font-size: 14px;
+  margin: 12px 0;
 }
 
 
-.row {
+.message-row {
   display: flex;
-  margin: 8px 0;
-}
-
-.row.assistant {
+  gap: 12px;
+  margin: 12px 0;
   align-items: flex-start;
 }
 
-.row.user {
-  justify-content: flex-end;
+.message-row.user {
+  flex-direction: row-reverse;
 }
 
 .avatar {
-  width: 28px;
-  height: 28px;
-  margin-right: 8px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  flex: 0 0 auto;
   background: #fff;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, .05);
+  border: 2px solid #fff;
+  box-shadow: 0 10px 24px rgba(122, 143, 119, 0.15);
+  object-fit: cover;
+}
+
+.assistant-avatar {
+  align-self: flex-start;
+}
+
+.user-avatar {
+  align-self: flex-start;
 }
 
 .bubble {
   max-width: 78%;
-  padding: 12px 14px;
-  border-radius: 16px;
-  color: #fff;
-  font-weight: 600;
+  padding: 16px 18px;
+  border-radius: 26px;
   word-break: break-word;
+  line-height: 1.6;
+  font-size: 16px;
+  font-weight: 500;
+  box-shadow: 0 18px 32px rgba(122, 143, 119, 0.16);
+  position: relative;
+}
+
+.bubble-text {
   white-space: pre-wrap;
-  line-height: 1.35;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, .06);
+  color: inherit;
+  letter-spacing: 0.2px;
 }
 
 .assistant-bubble {
-  background: #3b4452;
-  border-top-left-radius: 8px;
+  background: #E6EFE1;
+  color: #314131;
+  border-top-left-radius: 14px;
+}
+
+.assistant-bubble.is-streaming {
+  box-shadow: 0 20px 40px rgba(122, 143, 119, 0.22);
 }
 
 .assistant-bubble.is-error {
-  background: #dc2626;
+  background: #F6E5E3;
+  color: #7F3C36;
 }
 
 .assistant-bubble .cursor {
   display: inline-block;
-  width: 2px;
+  width: 3px;
   height: 1.2em;
-  background: currentColor;
-  margin-left: 4px;
+  background: #7A8F77;
+  margin-left: 6px;
   animation: blink 1s steps(2, start) infinite;
   vertical-align: bottom;
 }
 
 .assistant-bubble .error-text {
-  margin-top: 6px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.75);
+  margin-top: 10px;
+  font-size: 13px;
+  color: rgba(127, 60, 54, 0.85);
+}
+
+.user-bubble {
+  background: #DDE4D9;
+  color: #2F3D2F;
+  border-top-right-radius: 14px;
 }
 
 @keyframes blink {
@@ -909,66 +1040,93 @@ voiceBus.on('voice:ended', (id) => {
 }
 
 
-.user-bubble {
-  background: #f0ab45;
-  border-top-right-radius: 8px;
-}
 
-/* 底部输入栏 */
 .composer {
   position: sticky;
   bottom: 0;
-  display: grid;
-  grid-template-columns: 40px 1fr 40px 72px;
-  gap: 10px;
+  padding: 0 20px 28px;
+  background: linear-gradient(180deg, rgba(248, 247, 242, 0), #F8F7F2 45%, #F8F7F2 100%);
+  backdrop-filter: blur(8px);
+}
+
+.composer-surface {
+  display: flex;
   align-items: center;
-  padding: 10px 12px 16px;
-  background: rgba(245, 245, 245, .95);
-  backdrop-filter: saturate(150%) blur(6px);
-  border-top-left-radius: 18px;
-  border-top-right-radius: 18px;
+  gap: 14px;
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 14px 18px;
+  box-shadow: 0 22px 46px rgba(122, 143, 119, 0.22);
 }
 
-.input {
-  height: 40px;
+.composer-input {
+  flex: 1;
   border: none;
-  border-radius: 10px;
-  padding: 0 12px;
+  background: transparent;
+  font-size: 16px;
+  color: #314131;
+  line-height: 1.6;
+  min-height: 24px;
   outline: none;
-  background: #fff;
-  box-shadow: inset 0 0 0 1px #eee;
 }
 
-.tool-btn, .send-btn {
-  height: 40px;
+.composer-input:disabled {
+  color: rgba(49, 65, 49, 0.4);
+}
+
+.composer-input::placeholder {
+  color: rgba(49, 65, 49, 0.45);
+}
+
+.icon-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   border: none;
-  border-radius: 12px;
-  background: #fff;
-  cursor: pointer;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, .06);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  background: rgba(122, 143, 119, 0.12);
+  color: #7A8F77;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.tool-btn.active {
-  background: #fca5a5;
+.icon-button svg {
+  pointer-events: none;
 }
 
-.tool-btn:disabled, .send-btn:disabled {
-  opacity: .5;
+.icon-button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.send-btn {
-  background: #111827;
+.icon-button:active {
+  background: rgba(122, 143, 119, 0.24);
+}
+
+.icon-button.active {
+  background: rgba(122, 143, 119, 0.28);
+}
+
+.mic-button {
+  background: rgba(122, 143, 119, 0.12);
+}
+
+.send-action {
+  background: #7A8F77;
   color: #fff;
-  font-weight: 600;
+  box-shadow: 0 12px 24px rgba(122, 143, 119, 0.4);
+}
+
+.send-action:disabled {
+  background: rgba(122, 143, 119, 0.5);
+  box-shadow: none;
 }
 .tool-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(47, 61, 47, 0.32);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -980,66 +1138,86 @@ voiceBus.on('voice:ended', (id) => {
   position: relative;
   width: 100%;
   max-width: 660rpx;
-  background: #fff;
-  border-radius: 28rpx;
+  background: #F8F7F2;
+  border-radius: 32rpx;
   padding: 48rpx 36rpx;
-  box-shadow: 0 24rpx 48rpx rgba(0, 0, 0, 0.16);
+  box-shadow: 0 26rpx 56rpx rgba(122, 143, 119, 0.28);
+  border: 1px solid rgba(122, 143, 119, 0.18);
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 28rpx;
+  color: #2F3D2F;
 }
 
 .modal-close {
   position: absolute;
-  top: 18rpx;
-  right: 18rpx;
+  top: 24rpx;
+  right: 24rpx;
   border: none;
-  background: transparent;
-  font-size: 42rpx;
-  color: #6b7280;
+  background: rgba(122, 143, 119, 0.1);
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  font-size: 34rpx;
+  color: #7A8F77;
   cursor: pointer;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.modal-close:active,
+.modal-close:focus-visible {
+  background: rgba(122, 143, 119, 0.24);
+  color: #2F3D2F;
 }
 
 .modal-title {
   font-size: 40rpx;
   font-weight: 700;
-  color: #111827;
+  color: #2F3D2F;
   text-align: center;
 }
 
 .modal-summary {
-  background: #f3f4f6;
-  border-radius: 18rpx;
+  background: rgba(230, 239, 225, 0.65);
+  border-radius: 24rpx;
   padding: 24rpx;
+  border: 1px solid rgba(122, 143, 119, 0.2);
 }
 
 .modal-summary-text {
   font-size: 30rpx;
-  color: #1f2937;
+  color: #314131;
+  line-height: 1.6;
 }
 
 .modal-row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 24rpx;
 }
 
 .modal-label {
   font-size: 28rpx;
-  color: #6b7280;
+  color: rgba(49, 65, 49, 0.7);
   font-weight: 600;
+  min-width: 120rpx;
 }
 
 .modal-value {
   font-size: 30rpx;
-  color: #111827;
+  color: #2F3D2F;
   text-align: right;
   flex: 1;
+  line-height: 1.5;
 }
 
 .modal-error {
-  color: #dc2626;
+  color: #B03A3A;
   font-size: 28rpx;
   text-align: center;
 }
@@ -1053,25 +1231,37 @@ voiceBus.on('voice:ended', (id) => {
 .modal-btn {
   border: none;
   border-radius: 999rpx;
-  padding: 20rpx 36rpx;
+  padding: 22rpx 40rpx;
   font-size: 30rpx;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .modal-btn.primary {
-  background: var(--primary, #2563eb);
+  background: #7A8F77;
   color: #fff;
+  box-shadow: 0 16rpx 28rpx rgba(122, 143, 119, 0.35);
+}
+
+.modal-btn.primary:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 10rpx 20rpx rgba(122, 143, 119, 0.3);
 }
 
 .modal-btn.secondary {
-  background: #e5e7eb;
-  color: #111827;
+  background: rgba(122, 143, 119, 0.14);
+  color: #2F3D2F;
+}
+
+.modal-btn.secondary:active {
+  background: rgba(122, 143, 119, 0.24);
 }
 
 .modal-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: none;
 }
 </style>
 <script setup>
