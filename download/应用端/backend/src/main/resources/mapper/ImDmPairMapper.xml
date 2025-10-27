@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.ImDmPairMapper">
+
+    <select id="selectByPair" resultType="com.kuafu.web.model.ImDmPair">
+        SELECT *
+        FROM im_dm_pair
+        WHERE user_a = #{userA}
+          AND user_b = #{userB}
+            LIMIT 1
+    </select>
+
+</mapper>

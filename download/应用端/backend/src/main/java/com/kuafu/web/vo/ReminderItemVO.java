@@ -49,6 +49,8 @@ public class ReminderItemVO  extends BaseEntity {
     private String priority;
     @JsonProperty("dietRecipeId")
     private Integer dietRecipeId;
+    @JsonProperty("teamActivityId")
+    private Integer teamActivityId;
     @JsonDeserialize(using = MultiDateDeserializer.class)
     @JsonProperty("creationTime")
     private Date creationTime;

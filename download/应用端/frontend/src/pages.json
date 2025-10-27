@@ -30,30 +30,51 @@
         "path": "care/index",
         "style":  {
                 "navigationBarTitleText": "",
-                "navigationStyle": "default",
+                "navigationStyle": "custom",
 "enableShareAppMessage": true,
 "enableShareTimeline": true
             }
     },
 
-  {
-    "path": "care/questionare/index",
-    "style": {
-      "navigationBarTitleText": "Questionare"
-    }
-  },
+      {
+        "path": "activities/index",
+        "style":  {
+          "navigationBarTitleText": "",
+          "navigationStyle": "default",
+          "enableShareAppMessage": true,
+          "enableShareTimeline": true
+        }
+      },
+
+      {
+        "path": "activities/manage",
+        "style":  {
+          "navigationBarTitleText": "",
+          "navigationStyle": "default",
+          "enableShareAppMessage": true,
+          "enableShareTimeline": true
+        }
+      },
+
+      {
+        "path": "care/questionare/index",
+        "style": {
+          "navigationBarTitleText": "Questionare"
+        }
+      },
 
   {
     "path": "care/report/index",
     "style": {
-      "navigationBarTitleText": "Report"
+      "navigationBarTitleText": "Report",
     }
   },
 
   {
     "path": "chat/ai_chat/index",
     "style": {
-      "navigationBarTitleText": "Chat Home"
+      "navigationBarTitleText": "Chat Home",
+      "navigationStyle": "custom"
     }
   },
 
@@ -61,7 +82,7 @@
         "path": "chat/index",
         "style":  {
                 "navigationBarTitleText": "",
-                "navigationStyle": "default",
+                "navigationStyle": "custom",
 "enableShareAppMessage": true,
 "enableShareTimeline": true
             }
@@ -71,7 +92,7 @@
         "path": "todo/index",
         "style":  {
                 "navigationBarTitleText": "",
-                "navigationStyle": "default",
+                "navigationStyle": "custom",
 "enableShareAppMessage": true,
 "enableShareTimeline": true
             }
@@ -95,15 +116,36 @@
       "navigationBarTitleText": "Win modal"
     }
   },
+
+  {
+    "path": "chat/friend_chat/FriendList",
+    "style": {
+      "navigationBarTitleText": "My friend"
+    }
+  },
+  {
+    "path": "chat/friend_chat/ChatRoom",
+    "style": {
+      "navigationBarTitleText": "chat with my friend"
+    }
+  },
+
   {
         "path": "service/index",
         "style":  {
                 "navigationBarTitleText": "",
-                "navigationStyle": "default",
+                "navigationStyle": "custom",
 "enableShareAppMessage": true,
 "enableShareTimeline": true
             }
-    }
+    },
+  {
+    "path": "todo/show_modal/leaderboard/index",
+    "style": {
+      "navigationBarTitleText": "leaderboard",
+      "navigationBarBackgroundColor": "#A3B18A",
+      "navigationBarTextStyle": "white"
+    },
 
 ]}],    "globalStyle": {
         "navigationBarTextStyle": "black",

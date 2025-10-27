@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.FriendRequestMapper">
+    <resultMap id="FriendRequestMap" type="com.kuafu.web.model.FriendRequest">
+        <id     column="id"            property="id"/>
+        <result column="requester_id"  property="requesterId"/>
+        <result column="receiver_id"   property="receiverId"/>
+        <result column="status"        property="status"/>
+        <result column="created_at"    property="createdAt"/>
+        <result column="updated_at"    property="updatedAt"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO friend_request(requester_id, receiver_id, status)
+        VALUES(#{requesterId}, #{receiverId}, 'PENDING')
+            ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE friend_request
+        SET status = #{status}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" resultMap="FriendRequestMap">
+        SELECT * FROM friend_request WHERE id = #{id}
+    </select>
+
+    <select id="selectByPair" resultMap="FriendRequestMap">
+        SELECT * FROM friend_request
+        WHERE requester_id = #{requesterId} AND receiver_id = #{receiverId}
+    </select>
+
+    <select id="findPendingBetween" resultMap="FriendRequestMap">
+        SELECT * FROM friend_request
+        WHERE status = 'PENDING'
+        AND (
+        (requester_id = #{me} AND receiver_id IN
+        <foreach collection="targets" item="t" open="(" separator="," close=")">#{t}</foreach>)
+        OR
+        (receiver_id = #{me} AND requester_id IN
+        <foreach collection="targets" item="t" open="(" separator="," close=")">#{t}</foreach>)
+        )
+    </select>
+</mapper>
+

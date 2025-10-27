@@ -101,6 +101,11 @@ public class ReminderItem  {
 
     @TableField("diet_recipe_id")
     private Integer dietRecipeId;
+    @JsonProperty("team_activity_id")
+
+
+    @TableField("team_activity_id")
+    private Integer teamActivityId;
     @JsonProperty("creation_time")
 
 

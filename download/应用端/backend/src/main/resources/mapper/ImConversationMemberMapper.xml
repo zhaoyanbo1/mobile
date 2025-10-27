@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.ImConversationMemberMapper">
+
+    <select id="countMember" resultType="int">
+    <![CDATA[
+        SELECT COUNT(1)
+        FROM im_conversation_member
+        WHERE conversation_id = #{conversationId}
+          AND user_id = #{userId}
+        ]]>
+  </select>
+
+    <update id="updateLastRead">
+    <![CDATA[
+        UPDATE im_conversation_member
+        SET last_read_msg_id = #{lastReadMsgId}
+        WHERE conversation_id = #{conversationId}
+          AND user_id = #{userId}
+        ]]>
+  </update>
+
+    <select id="peerId" resultType="long">
+    <![CDATA[
+        SELECT m2.user_id
+        FROM im_conversation_member m1
+                 JOIN im_conversation_member m2
+                      ON m1.conversation_id = m2.conversation_id
+        WHERE m1.conversation_id = #{conversationId}
+          AND m1.user_id = #{selfId}
+          AND m2.user_id <> #{selfId}
+            LIMIT 1
+        ]]>
+  </select>
+
+</mapper>

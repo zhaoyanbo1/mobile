@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.kuafu.web.mapper.FriendshipMapper">
+
+    <resultMap id="FriendPairMap" type="com.kuafu.web.mapper.FriendshipMapper$FriendPair">
+        <result column="user_id" property="userId"/>
+        <result column="friend_user_id" property="friendUserId"/>
+    </resultMap>
+
+    <insert id="insertOne">
+        INSERT IGNORE INTO friendship(user_id, friend_user_id)
+        VALUES (#{userId}, #{friendUserId})
+    </insert>
+
+    <select id="exists" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM friendship
+        WHERE user_id = #{userId} AND friend_user_id = #{friendUserId}
+    </select>
+
+    <select id="findFriendsBetween" resultMap="FriendPairMap">
+        SELECT user_id, friend_user_id
+        FROM friendship
+        WHERE user_id = #{me}
+        AND friend_user_id IN
+        <foreach collection="targets" item="t" open="(" separator="," close=")">#{t}</foreach>
+    </select>
+
+</mapper>

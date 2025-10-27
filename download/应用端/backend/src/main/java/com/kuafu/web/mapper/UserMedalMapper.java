@@ -11,3 +11,4 @@ public interface UserMedalMapper extends BaseMapper<UserMedal> {
     @Insert("INSERT OR IGNORE INTO user_medal (user_id, medal_id) VALUES (#{userId}, #{medalId})")
     int insertIgnore(@Param("userId") Long userId, @Param("medalId") Long medalId);
 }
+    

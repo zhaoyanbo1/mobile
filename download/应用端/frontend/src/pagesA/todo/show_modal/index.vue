@@ -145,3 +145,4 @@ onShow(() => { fetchMedals() })
 }
 .btn:active{ transform: translateY(.5px) scale(.99); }
 </style>
+

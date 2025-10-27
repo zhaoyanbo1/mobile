@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.kuafu.web.mapper.FriendListMapper">
+
+    <!--
+      查询当前用户的所有好友：
+      1) 在 friendship 表中找到 user_id=我的ID 的所有 friend_user_id
+      2) 再连 user_info 表取好友用户名
+    -->
+    <select id="listMyFriends" parameterType="long" resultType="com.kuafu.web.dto.FriendBrief">
+        SELECT
+            ui.user_info_id AS userId,
+            ui.username AS nickname,
+            NULL AS avatarUrl
+        FROM user_info ui
+        WHERE ui.user_info_id IN (
+            SELECT f.friend_user_id
+            FROM friendship f
+            WHERE f.user_id = #{userId}
+            UNION
+            SELECT f.user_id
+            FROM friendship f
+            WHERE f.friend_user_id = #{userId}
+        )
+        ORDER BY ui.username ASC
+    </select>
+
+</mapper>

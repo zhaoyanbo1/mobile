@@ -6,20 +6,20 @@
         <span aria-hidden="true">←</span>
       </button>
       <text class="topbar-title">LiveWell Coach</text>
-<!--      <button-->
-<!--          class="topbar-action"-->
-<!--          @click="newConversation"-->
-<!--          aria-label="New"-->
-<!--          title="New"-->
-<!--      >-->
-<!--        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">-->
-<!--          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>-->
-<!--        </svg>-->
-<!--      </button>-->
+      <!--      <button-->
+      <!--          class="topbar-action"-->
+      <!--          @click="newConversation"-->
+      <!--          aria-label="New"-->
+      <!--          title="New"-->
+      <!--      >-->
+      <!--        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">-->
+      <!--          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>-->
+      <!--        </svg>-->
+      <!--      </button>-->
     </view>
 
     <!-- 消息区 -->
-    <main ref="scrollRef" class="messages" @scroll.passive="handleScroll">
+    <main ref="scrollRef" class="messages" @scroll="handleScroll">
       <div v-if="historyLoading" class="history-loading">Loading history...</div>
       <div v-for="m in messages" :key="m.id" class="message-row" :class="m.role">
         <template v-if="m.role === 'assistant'">
@@ -49,6 +49,21 @@
       <!--        <div class="bubble assistant-bubble">{{ streamingChunk }}</div>-->
       <!--      </div>-->
     </main>
+
+    <button
+        v-if="showScrollToBottom"
+        class="scroll-to-bottom"
+        type="button"
+        @click="jumpToLatest"
+        aria-label="Back to new"
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path
+            d="M12 4a1 1 0 0 1 1 1v9.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L11 14.586V5a1 1 0 0 1 1-1zM5 19a1 1 0 1 1 0-2h14a1 1 0 1 1 0 2H5z"
+            fill="currentColor"
+        />
+      </svg>
+    </button>
 
     <!-- 底部输入栏 -->
     <footer class="composer">
@@ -185,6 +200,7 @@ const messages = ref([
 //const streamingChunk = ref('')
 const loading = ref(false)
 const scrollRef = ref(null)
+const showScrollToBottom = ref(false)
 // let es = null
 const conversationId = ref('')
 const conversationCache = ref(null)
@@ -214,12 +230,38 @@ const toolError = ref('')
 
 const createLocalId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
+let windowScrollHandler = null
+
+const updateScrollAffordance = () => {
+  let distance = 0
+  const el = scrollRef.value
+  if (el) {
+    const maxScrollTop = Math.max(0, el.scrollHeight - el.clientHeight)
+    distance = Math.max(distance, maxScrollTop - el.scrollTop)
+  }
+  if (typeof window !== 'undefined') {
+    const doc = document.scrollingElement || document.documentElement || document.body
+    if (doc) {
+      const winScrollTop = window.scrollY ?? doc.scrollTop ?? 0
+      const winDistance = Math.max(0, doc.scrollHeight - window.innerHeight - winScrollTop)
+      distance = Math.max(distance, winDistance)
+    }
+  }
+  showScrollToBottom.value = distance > 32
+}
+
 const scrollToBottom = async () => {
   await nextTick()
   const el = scrollRef.value
   if (el) {
     el.scrollTop = el.scrollHeight
+    showScrollToBottom.value = false
   }
+}
+
+const jumpToLatest = async () => {
+  await scrollToBottom()
+  showScrollToBottom.value = false
 }
 
 const makeUrl = (path) => `${API_PREFIX}${path}`
@@ -264,6 +306,40 @@ const ensureUser = async () => {
   throw new Error(res?.message || '未能获取用户信息')
 }
 
+const restoreLatestConversationId = async () => {
+  if (!proxy?.$cf?.chat?.listConversations || !userId.value) {
+    return ''
+  }
+  try {
+    const res = await proxy.$cf.chat.listConversations({
+      userId: userId.value,
+      page: 1,
+      size: 1,
+      status: 'ACTIVE',
+    })
+    if (!res?.success) {
+      return ''
+    }
+    const records = Array.isArray(res.data?.records) ? res.data.records : []
+    const latest = records.find((item) => item?.conversationId)
+    if (!latest) {
+      return ''
+    }
+    if (conversationId.value === latest.conversationId) {
+      return conversationId.value
+    }
+    conversationCache.value = {
+      id: latest.conversationId,
+      createdAt: new Date().toISOString(),
+    }
+    conversationId.value = latest.conversationId
+    return conversationId.value
+  } catch (error) {
+    console.warn('Failed to restore latest conversation', error)
+    return ''
+  }
+}
+
 const loadHistory = async ({ reset = false, prepend = false, scroll = false } = {}) => {
   if (!conversationId.value || !userId.value || historyLoading.value) {
     return 0
@@ -296,6 +372,9 @@ const loadHistory = async ({ reset = false, prepend = false, scroll = false } = 
     hasMoreHistory.value = Boolean(data.hasMore)
     if (scroll) {
       await scrollToBottom()
+    } else {
+      await nextTick()
+      updateScrollAffordance()
     }
     return records.length
   } catch (error) {
@@ -306,12 +385,41 @@ const loadHistory = async ({ reset = false, prepend = false, scroll = false } = 
   }
 }
 
-const handleScroll = async (event) => {
-  if (!hasMoreHistory.value || historyLoading.value) {
-    return
+const loadCompleteHistory = async () => {
+  if (!conversationId.value || !userId.value) {
+    messages.value = []
+    historyCursor.value = null
+    hasMoreHistory.value = false
+    return 0
   }
-  const el = event.target
-  if (el && el.scrollTop <= 24) {
+  if (historyLoading.value) {
+    return 0
+  }
+  messages.value = []
+  historyCursor.value = null
+  hasMoreHistory.value = true
+  let total = 0
+  let firstBatch = true
+  while (hasMoreHistory.value) {
+    const loaded = await loadHistory({
+      reset: firstBatch,
+      prepend: !firstBatch,
+    })
+    if (loaded <= 0) {
+      break
+    }
+    total += loaded
+    firstBatch = false
+  }
+  if (total > 0) {
+    await scrollToBottom()
+  }
+  return total
+}
+
+const handleScroll = async (event) => {
+  const el = event?.target
+  if (el && hasMoreHistory.value && !historyLoading.value && el.scrollTop <= 24) {
     const previousHeight = el.scrollHeight
     const previousTop = el.scrollTop
     const loaded = await loadHistory({ prepend: true })
@@ -321,6 +429,7 @@ const handleScroll = async (event) => {
       el.scrollTop = newHeight - previousHeight + previousTop
     }
   }
+  updateScrollAffordance()
 }
 
 const finalizeStream = ({ errorMessage, cancelled } = {}) => {
@@ -408,8 +517,19 @@ const ensureConversation = async (titleHint) => {
   if (conversationId.value && isConversationFresh()) {
     return conversationId.value
   }
-  if (conversationId.value && !isConversationFresh()) {
+  if (!conversationId.value) {
+    const restored = await restoreLatestConversationId()
+    if (restored) {
+      return restored
+    }
+  } else if (!isConversationFresh()) {
+    const previousId = conversationId.value
     conversationId.value = ''
+    const restored = await restoreLatestConversationId()
+    if (restored) {
+      return restored
+    }
+    conversationId.value = previousId
   }
   const res = await proxy?.$cf?.chat?.createConversation({
     userId: userId.value,
@@ -819,23 +939,44 @@ onLoad(async (options) => {
       conversationId.value = cached.id
     }
   }
+  let hasUser = false
   try {
     await ensureUser()
+    hasUser = true
   } catch (error) {
     if (error?.message) {
       proxy?.$cf?.toast?.({ message: error.message, level: 'warning' })
     }
   }
+  if (hasUser && !conversationId.value) {
+    await restoreLatestConversationId()
+  }
   if (conversationId.value && userId.value) {
-    await loadHistory({ reset: true, scroll: true })
+    await loadCompleteHistory()
+  } else {
+    messages.value = []
+    historyCursor.value = null
+    hasMoreHistory.value = false
+    showScrollToBottom.value = false
   }
 })
 
 //onBeforeUnmount(() => stopStream())
+onMounted(() => {
+  nextTick(() => updateScrollAffordance())
+  if (typeof window !== 'undefined') {
+    windowScrollHandler = () => updateScrollAffordance()
+    window.addEventListener('scroll', windowScrollHandler, { passive: true })
+  }
+})
 onBeforeUnmount(() => {
   finalizeStream({ cancelled: true })
   stopStream()
   voiceBus.emit('voice:stop', currentUtteranceId)
+  if (typeof window !== 'undefined' && windowScrollHandler) {
+    window.removeEventListener('scroll', windowScrollHandler)
+    windowScrollHandler = null
+  }
 })
 
 voiceBus.on('voice:stopped', (id) => {
@@ -857,10 +998,11 @@ voiceBus.on('voice:ended', (id) => {
 }
 
 .chat-wrap {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: #F8F7F2;
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
@@ -937,6 +1079,35 @@ voiceBus.on('voice:ended', (id) => {
   overflow-y: auto;
   padding: 16px 20px 160px;
   background: transparent;
+}
+.scroll-to-bottom {
+  position: fixed;
+  right: 24px;
+  bottom: 120px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #7A8F77;
+  color: #fff;
+  box-shadow: 0 16px 32px rgba(122, 143, 119, 0.35);
+  cursor: pointer;
+  z-index: 12;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.scroll-to-bottom:active,
+.scroll-to-bottom:focus-visible {
+  transform: translateY(1px);
+  box-shadow: 0 12px 24px rgba(122, 143, 119, 0.3);
+  outline: none;
+}
+
+.scroll-to-bottom svg {
+  pointer-events: none;
 }
 .history-loading {
   text-align: center;

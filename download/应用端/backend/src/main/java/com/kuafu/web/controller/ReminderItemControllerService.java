@@ -202,6 +202,7 @@ public class ReminderItemControllerService  {
                 .locationAddress(vo.getLocationAddress())
                 .priority(vo.getPriority())
                 .dietRecipeId(vo.getDietRecipeId())
+                .teamActivityId(vo.getTeamActivityId())
                 .creationTime(vo.getCreationTime())
                 .build();
 
@@ -269,6 +270,7 @@ public class ReminderItemControllerService  {
                 .locationAddress(vo.getLocationAddress())
                 .priority(vo.getPriority())
                 .dietRecipeId(vo.getDietRecipeId())
+                .teamActivityId(vo.getTeamActivityId())
                 .creationTime(vo.getCreationTime())
                 .build();
 

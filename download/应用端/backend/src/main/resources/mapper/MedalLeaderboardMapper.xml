@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kuafu.web.mapper.MedalLeaderboardMapper">
+
+    <resultMap id="MedalLeaderboardMap" type="com.kuafu.web.vo.MedalLeaderboardVO">
+        <result property="userId"     column="userId"/>
+        <result property="username"   column="username"/>
+        <result property="avatarUrl"  column="avatarUrl"/>
+        <result property="medalCount" column="medalCount"/>
+        <result property="lastMedalAt" column="lastMedalAt"/>
+    </resultMap>
+
+    <resultMap id="MyMedalStatMap" type="com.kuafu.web.vo.MyMedalStatVO">
+        <result property="userId"      column="userId"/>
+        <result property="medalCount"  column="medalCount"/>
+        <result property="lastMedalAt" column="lastMedalAt"/>
+        <result property="rank"        column="rank"/>
+    </resultMap>
+
+    <!-- 至少 1 枚奖牌的用户总数 -->
+    <select id="countLeaderboardUsers" resultType="long">
+        SELECT COUNT(DISTINCT user_id) FROM user_medal
+    </select>
+
+    <!-- 分页列表（MySQL：LIMIT offset, limit） -->
+    <select id="page" resultMap="MedalLeaderboardMap">
+        SELECT
+            ui.user_info_id AS userId,
+            ui.username     AS username,
+            COUNT(um.medal_id)   AS medalCount,
+            MAX(um.created_at)   AS lastMedalAt
+        FROM user_medal um
+                 JOIN user_info ui ON ui.user_info_id = um.user_id
+        GROUP BY ui.user_info_id, ui.username
+        ORDER BY medalCount DESC, lastMedalAt DESC
+            LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- “我的”统计 + 稳定排名 -->
+    <!-- 推荐 MySQL 8.0+（支持 CTE）；若是 5.7，请用下方“5.7 兼容写法”替换 -->
+    <select id="myStat" parameterType="long" resultMap="MyMedalStatMap">
+        WITH my AS (
+            SELECT
+                #{userId} AS userId,
+                (SELECT COUNT(*)      FROM user_medal WHERE user_id = #{userId}) AS medalCount,
+                (SELECT MAX(created_at) FROM user_medal WHERE user_id = #{userId}) AS lastMedalAt
+        )
+        SELECT
+            my.userId      AS userId,
+            my.medalCount  AS medalCount,
+            my.lastMedalAt AS lastMedalAt,
+            (
+                SELECT 1 + COUNT(1)
+                FROM (
+                         SELECT
+                             um.user_id          AS uid,
+                             COUNT(um.medal_id)  AS cnt,
+                             MAX(um.created_at)  AS lastAt
+                         FROM user_medal um
+                         GROUP BY um.user_id
+                     ) t
+                WHERE (t.cnt > my.medalCount)
+                   OR (t.cnt = my.medalCount
+                    AND t.lastAt IS NOT NULL AND my.lastMedalAt IS NOT NULL
+                    AND t.lastAt > my.lastMedalAt)
+            ) AS rank
+        FROM my
+    </select>
+
+
+    <select id="selectMyMedalStat" resultType="com.kuafu.web.vo.MyMedalStatVO">
+        SELECT
+            a.user_id     AS userId,
+            a.medalCount  AS medalCount,
+            a.lastMedalAt AS lastMedalAt,
+            (
+                SELECT COUNT(*) + 1
+                FROM (
+                         SELECT um2.user_id,
+                                COUNT(um2.medal_id)  AS medalCount,
+                                MAX(um2.created_at)  AS lastMedalAt
+                         FROM user_medal um2
+                         GROUP BY um2.user_id
+                     ) b
+                WHERE b.medalCount > a.medalCount
+                   OR (b.medalCount = a.medalCount AND b.lastMedalAt > a.lastMedalAt)
+            ) AS `rank`
+        FROM (
+                 SELECT um.user_id,
+                        COUNT(um.medal_id) AS medalCount,
+                        MAX(um.created_at) AS lastMedalAt
+                 FROM user_medal um
+                 WHERE um.user_id IS NOT NULL
+                 GROUP BY um.user_id
+             ) a
+        WHERE a.user_id = #{userId}
+    </select>
+
+
+
+    <!-- ===== 如果你的 MySQL 是 5.7（无 CTE），用下面这个 myStat 替换上面的 =====
+    <select id="myStat" parameterType="long" resultMap="MyMedalStatMap">
+      SELECT
+        #{userId} AS userId,
+        (SELECT COUNT(*) FROM user_medal WHERE user_id = #{userId}) AS medalCount,
+        (SELECT MAX(created_at) FROM user_medal WHERE user_id = #{userId}) AS lastMedalAt,
+        (
+          SELECT 1 + COUNT(1)
+          FROM (
+            SELECT
+              um.user_id         AS uid,
+              COUNT(um.medal_id) AS cnt,
+              MAX(um.created_at) AS lastAt
+            FROM user_medal um
+            GROUP BY um.user_id
+          ) t
+          WHERE (t.cnt > (SELECT COUNT(*) FROM user_medal WHERE user_id = #{userId}))
+             OR (
+               t.cnt = (SELECT COUNT(*) FROM user_medal WHERE user_id = #{userId})
+               AND t.lastAt IS NOT NULL
+               AND (SELECT MAX(created_at) FROM user_medal WHERE user_id = #{userId}) IS NOT NULL
+               AND t.lastAt > (SELECT MAX(created_at) FROM user_medal WHERE user_id = #{userId})
+             )
+        ) AS rank
+    </select>
+    -->
+</mapper>

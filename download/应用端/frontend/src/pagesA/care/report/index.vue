@@ -1,7 +1,8 @@
+<!-- src/pagesA/profile/index.vue -->
 <template>
   <base-layout>
     <view class="page">
-      <!-- User header -->
+      <!-- User info card -->
       <view class="card user-card">
         <uni-icons type="person-filled" size="36" :color="primaryColor" />
         <view class="ml-4">
@@ -17,38 +18,24 @@
           <view class="btn primary small" @click="updateQuestionnaire">Update</view>
         </view>
 
-        <!-- Four fixed cards: 😊 Low risk (title left, content centered below) -->
+        <!-- Key indicators -->
         <view class="grid grid-cols-2 gap-4">
-          <view class="stat stat-sage">
-            <text class="stat-label">Functional Independence</text>
-            <view class="stat-body">
-              <text class="stat-emoji">😊</text>
-              <text class="stat-value-strong">Low risk</text>
+          <view
+              v-for="ind in indicators"
+              :key="ind.title"
+              class="ind-card"
+          >
+            <view class="ind-head">
+              <view class="ind-icon" :style="{ backgroundColor: ind.color + '20' }">
+                <text class="ind-emoji">{{ ind.emoji }}</text>
+              </view>
             </view>
-          </view>
 
-          <view class="stat stat-warn">
-            <text class="stat-label">Fall </text>
-            <text class="stat-label">Risk</text>
-            <view class="stat-body">
-              <text class="stat-emoji">😊</text>
-              <text class="stat-value-strong">Low risk</text>
-            </view>
-          </view>
+            <text class="ind-title">{{ ind.title }}</text>
+            <text class="ind-desc">{{ ind.description }}</text>
 
-          <view class="stat stat-success">
-            <text class="stat-label">Physical Activity</text>
-            <view class="stat-body">
-              <text class="stat-emoji">😊</text>
-              <text class="stat-value-strong">Low risk</text>
-            </view>
-          </view>
-
-          <view class="stat stat-sage">
-            <text class="stat-label">Nutrition Status</text>
-            <view class="stat-body">
-              <text class="stat-emoji">😊</text>
-              <text class="stat-value-strong">Low risk</text>
+            <view class="ind-bar">
+              <view class="ind-fill" :style="{ width: ind.progress + '%', background: ind.color }"></view>
             </view>
           </view>
         </view>
@@ -124,8 +111,8 @@ import { onLoad } from '@dcloudio/uni-app'
 
 const { proxy } = getCurrentInstance()
 
-/** Palette */
-const primaryColor = '#93b2a1' // sage
+/** Theme color */
+const primaryColor = '#93b2a1' // sage green
 
 /** State */
 const userInfo = ref({})
@@ -138,7 +125,15 @@ const systemSettings = ref({
 const newContact = ref({ name: '', phone_number: '' })
 const addContactPopup = ref(null)
 
-/** Fetchers */
+/** Key indicators */
+const indicators = [
+  { title: 'Sleep Quality', description: 'Slept 8 hours last night', progress: 100, color: '#A3B18A', emoji: '🌙' },
+  { title: 'Healthy Diet', description: 'Water intake goal achieved today', progress: 85, color: '#DDB892', emoji: '🍎' },
+  { title: 'Active Lifestyle', description: 'Daily step goal completed', progress: 92, color: '#7E8C77', emoji: '🏃‍♂️' },
+  { title: 'Social Interaction', description: '5 interactions today', progress: 75, color: '#588157', emoji: '💬' },
+]
+
+/** Fetch user data */
 const fetchUserData = async () => {
   const userRes = await proxy.$cf.login.getLoginUser()
   if (userRes.success && userRes.data) {
@@ -176,7 +171,7 @@ const addEmergencyContact = () => {
 
 const saveEmergencyContact = async () => {
   if (!newContact.value.name || !newContact.value.phone_number) {
-    proxy.$cf.toast({ message: 'Please fill all required fields', level: 'error' })
+    proxy.$cf.toast({ message: 'Please fill in all required fields', level: 'error' })
     return
   }
   const userRes = await proxy.$cf.login.getLoginUser()
@@ -191,7 +186,7 @@ const saveEmergencyContact = async () => {
     }
   })
   if (res.success) {
-    proxy.$cf.toast({ message: 'Contact saved', level: 'success' })
+    proxy.$cf.toast({ message: 'Contact saved successfully', level: 'success' })
     addContactPopup.value.close()
     await fetchEmergencyContacts(userRes.data.user_info_id)
   }
@@ -201,7 +196,7 @@ const callContact = (phoneNumber) => {
   uni.makePhoneCall({ phoneNumber })
 }
 
-/** Optional settings */
+/** System settings (optional) */
 const saveSystemSettings = async () => {
   const userRes = await proxy.$cf.login.getLoginUser()
   if (!userRes.success) return
@@ -226,17 +221,9 @@ onLoad(() => { fetchUserData() })
 </script>
 
 <style scoped>
+.btn-label{ color: inherit; font-size: inherit; font-weight: inherit; line-height: 1; display: inline-block; }
 
-/* make sure label renders and inherits color/size */
-.btn-label{
-  color: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: 1;
-  display: inline-block;
-}
-
-/* ===== Shared theme ===== */
+/* ===== Theme ===== */
 :root{
   --sage:#93b2a1;
   --ink:#111827;
@@ -252,14 +239,7 @@ onLoad(() => { fetchUserData() })
 .page{ padding:16px; background:var(--bg); min-height:100vh; }
 
 /* Cards */
-.card{
-  background:var(--surface);
-  border:1px solid var(--hairline);
-  border-radius:20px;
-  padding:18px;
-  box-shadow:var(--shadow);
-  margin-bottom:18px;
-}
+.card{ background:var(--surface); border:1px solid var(--hairline); border-radius:20px; padding:18px; box-shadow:var(--shadow); margin-bottom:18px; }
 .user-card{ display:flex; align-items:center; }
 
 /* Titles */
@@ -268,63 +248,34 @@ onLoad(() => { fetchUserData() })
 .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
 .card-title{ font-size:20px; font-weight:800; color:var(--ink); }
 
-/* Stat cards: split into top (title) + bottom (centered content) */
-.stat{
-  border-radius:14px;
-  padding:12px 14px;
-  background:#f5f7f5;
-  border:1px solid var(--hairline);
-  min-height:240rpx;                 /* consistent height */
-  display:flex;
-  flex-direction:column;             /* title on top, body below */
+/* —— New: Indicator cards —— */
+.ind-card{
+  background: rgba(255,255,255,.8);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow);
 }
-.stat-sage{ background:#eef3ef;  }
-.stat-success{ background:#eef8f2; }
-.stat-warn{ background:#f3f6ee; }
-.stat-danger{ background:#f6eeee; }
-
-.stat-label{
-  font-size:32rpx;
-  font-weight:900;
-  color:#50605a;
-  text-align:left;
-  margin-bottom:6rpx;
-}
-
-/* Lower half: emoji + text centered as a group */
-.stat-body{
-  flex:1;                            /* take remaining space */
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:8rpx;
-  text-align:center;
-}
-.stat-emoji{ font-size:64rpx; line-height:1; }
-.stat-value-strong{ font-size:30rpx; font-weight:800; color:#111827; }
+.ind-head{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.ind-icon{ width: 44px; height: 44px; border-radius: 12px; display:flex; align-items:center; justify-content:center; }
+.ind-emoji{ font-size: 22px; }
+.ind-title{ display:block; font-weight:700; color:var(--ink); margin-bottom:6px; }
+.ind-desc{ display:block; color:var(--muted); font-size: 12px; margin-bottom:10px; }
+.ind-bar{ width:100%; height:8px; background:#e5e7eb; border-radius:9999px; overflow:hidden; }
+.ind-fill{ height:100%; border-radius:9999px; transition: width .6s ease; }
 
 /* Empty state */
 .empty{ padding:32px 0; text-align:center; color:#9ca3af; }
 
 /* Contacts */
-.contact-row{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:12px 0; border-bottom:1px solid #f0f0f0;
-}
+.contact-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f0f0f0; }
 .contact-row:last-child{ border-bottom:none; }
 .contact-name{ font-weight:600; color:#111; }
 .contact-sub{ font-size:13px; color:#6b7280; }
 
 /* Buttons */
-.btn{
-  display:inline-flex; align-items:center; justify-content:center;
-  height:40px; padding:0 16px; border-radius:9999px;
-  font-weight:800; font-size:14px;
-  box-shadow:0 6px 14px rgba(0,0,0,.08);
-  background: var(--sage, #93b2a1);
-  color: #fff;
-}
+.btn{ display:inline-flex; align-items:center; justify-content:center; height:40px; padding:0 16px; border-radius:9999px;
+  font-weight:800; font-size:14px; box-shadow:0 6px 14px rgba(0,0,0,.08); background: var(--sage, #93b2a1); color: #fff; }
 .btn.small{ height:34px; padding:0 12px; font-size:13px; box-shadow:none; }
 .btn.primary{ background:var(--sage); color:#fff; }
 .btn.success{ background:var(--success); color:#fff; }
@@ -332,19 +283,12 @@ onLoad(() => { fetchUserData() })
 .mt-4{ margin-top:1rem; }
 
 /* Popup */
-.popup{
-  background:#fff; border-radius:18px; padding:24px; width:20rem;
-  box-shadow:var(--shadow);
-}
+.popup{ background:#fff; border-radius:18px; padding:24px; width:20rem; box-shadow:var(--shadow); }
 .popup-title{ font-size:18px; font-weight:800; color:var(--ink); margin-bottom:12px; }
 
-/* Form tweaks */
+/* Form */
 :deep(.uni-forms-item__label){ font-size:14px; color:#4b5563; font-weight:700; }
-:deep(.uni-easyinput__content){
-  border-radius:14px !important;
-  border-color:#e5e7eb !important;
-  min-height:44px; background:#fff;
-}
+:deep(.uni-easyinput__content){ border-radius:14px !important; border-color:#e5e7eb !important; min-height:44px; background:#fff; }
 :deep(.uni-easyinput__content-input){ font-size:15px; color:#111827; }
 :deep(.uni-easyinput__placeholder-class){ color:#9ca3af !important; }
 </style>

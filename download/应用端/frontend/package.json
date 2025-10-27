@@ -67,6 +67,7 @@
         "crypto-js": "^4.2.0",
         "echarts": "^5.5.1",
         "html5-qrcode": "^2.3.8",
+        "lucide-vue-next": "^0.545.0",
         "marked": "^15.0.6",
         "uni-ui": "^1.0.0",
         "uqrcodejs": "^4.0.7",

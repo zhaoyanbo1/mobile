@@ -8,6 +8,17 @@ export default {
             data,
         })
     },
+    listConversations({ userId, page = 1, size = 20, status } = {}) {
+        const params = { userId, page, size }
+        if (status) {
+            params.status = status
+        }
+        return service({
+            url: '/conversations',
+            method: 'get',
+            params,
+        })
+    },
     fetchMessages({ conversationId, userId, cursor, limit }) {
         const params = { userId }
         if (cursor !== undefined && cursor !== null) {
