@@ -44,6 +44,7 @@
 import { ref, nextTick } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import imApi from '@/api/page/im.js' // ← 你的 IM 接口文件（默认导出）
+import  useNotificationStore  from '@/api/utils/notificationStore'
 
 /** 当前登录用户 ID，用于左右判断 */
 const myId = ref(Number(uni.getStorageSync('uid')) || 0)
@@ -55,6 +56,8 @@ const conversationId = ref(null)     // 当前会话ID
 const messages = ref([])             // 消息列表
 const inputText = ref('')            // 输入框内容
 const scrollTop = ref(0)             // 控制滚动
+
+const notifications = useNotificationStore()
 
 /** 进入页面：拿到 query 参数并加载历史 */
 onLoad(async (q) => {
@@ -70,6 +73,8 @@ onLoad(async (q) => {
     const r = await imApi.ensureDm(peerId.value)
     conversationId.value = r?.data ?? r ?? null
   }
+
+  syncConversationMapping()
 
   await loadMessages()
   scrollToBottom(true)
@@ -124,6 +129,10 @@ async function loadMessages() {
 
   // 加载后自动滚动到底部
   scrollToBottom(true)
+
+  const latest = messages.value.length ? messages.value[messages.value.length - 1] : null
+  syncConversationMapping()
+  markMessagesAsRead(latest?.messageId)
 }
 
 
@@ -175,6 +184,8 @@ async function sendMessage() {
 
     sortMessages()
     scrollToBottom()
+    syncConversationMapping()
+    markMessagesAsRead(saved?.messageId)
   } catch (e) {
     // 失败：移除临时消息并提示
     messages.value = messages.value.filter(m => m.messageId !== tempId)
@@ -193,6 +204,27 @@ function sortMessages() {
     return ia - ib
   })
 }
+
+function syncConversationMapping() {
+  if (peerId.value && conversationId.value) {
+    notifications.setConversationForFriend(peerId.value, conversationId.value)
+  }
+}
+
+function markMessagesAsRead(latestMessageId) {
+  if (peerId.value) {
+    notifications.markFriendRead(peerId.value)
+  }
+  if (conversationId.value) {
+    notifications.markConversationRead(conversationId.value)
+  }
+  if (conversationId.value && latestMessageId) {
+    imApi.markRead(conversationId.value, latestMessageId).catch(err => {
+      console.warn('标记已读失败', err)
+    })
+  }
+}
+
 
 
 </script>

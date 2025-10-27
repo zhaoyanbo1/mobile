@@ -85,6 +85,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/data/invoke").permitAll()
                 .antMatchers("/api/data/invoke/**").permitAll()
                 .antMatchers("/api/user-medals").permitAll()
+                .antMatchers("/api/friends/my").permitAll()
                 .antMatchers("/api/team-activities").permitAll()
                 .antMatchers("/api/team-activities/**").permitAll()
                 .antMatchers("/chatbot/**", "/difyConfig/**").permitAll()

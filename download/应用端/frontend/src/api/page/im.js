@@ -88,9 +88,18 @@ function sendMessage(payload) {
     return POST(`${prefix}/messages`, payload)
 }
 
+function markRead(conversationId, lastReadMsgId) {
+    if (!conversationId || !lastReadMsgId) {
+        return Promise.resolve()
+    }
+    return POST(`${prefix}/read?conversationId=${conversationId}&lastReadMsgId=${lastReadMsgId}`)
+}
+
+
 // 也可以按需导出单个函数
 export default {
     ensureDm,
     getMessages,
     sendMessage,
+    markRead,
 }

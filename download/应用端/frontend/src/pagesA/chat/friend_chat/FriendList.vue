@@ -14,7 +14,10 @@
         <view class="info">
           <text class="name">{{ item.nickname || ('用户' + item.userId) }}</text>
         </view>
-        <view class="arrow">›</view>
+        <view class="meta">
+          <view v-if="getUnreadCount(item)" class="badge">{{ formatBadge(getUnreadCount(item)) }}</view>
+          <view class="arrow">›</view>
+        </view>
       </view>
     </scroll-view>
 
@@ -26,14 +29,26 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import api from '@/api/index.js'
+import  useNotificationStore  from '@/api/utils/notificationStore'
 
 const friends = ref([])
+const notifications = useNotificationStore()
+
+const getUnreadCount = (friend) => notifications.getFriendUnread(friend?.userId)
+
+const formatBadge = (count) => {
+  if (!count) return ''
+  return count > 99 ? '99+' : String(count)
+}
 
 async function load() {
   try {
     const res = await api.friends.getMyFriendList()
-    friends.value = res || []
+    const list = Array.isArray(res) ? res : []
+    friends.value = list
+    notifications.applyFriendList(list)
   } catch (e) {
     console.error('获取好友失败:', e)
     uni.showToast({title: '加载失败', icon: 'none'})
@@ -41,12 +56,18 @@ async function load() {
 }
 
 function goChat(friend) {
+  notifications.setConversationForFriend(friend?.userId, friend?.conversationId)
+  notifications.markFriendRead(friend?.userId)
+  if (friend?.conversationId) {
+    notifications.markConversationRead(friend.conversationId)
+  }
   uni.navigateTo({
-    url: `/pagesA/chat/friend_chat/ChatRoom?peerId=${friend.userId}&nickname=${friend.nickname}`
+    url: `/pagesA/chat/friend_chat/ChatRoom?peerId=${friend.userId}&nickname=${encodeURIComponent(friend.nickname || ('用户' + friend.userId))}${friend.conversationId ? `&conversationId=${friend.conversationId}` : ''}`
   })
 }
 
 onMounted(load)
+onShow(load)
 </script>
 
 <style scoped>
@@ -87,6 +108,26 @@ onMounted(load)
 .info {
   display: flex;
   flex-direction: column;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.badge {
+  min-width: 48rpx;
+  padding: 0 16rpx;
+  height: 40rpx;
+  border-radius: 999rpx;
+  background: #f87171;
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .name {

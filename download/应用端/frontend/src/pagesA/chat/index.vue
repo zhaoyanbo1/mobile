@@ -34,6 +34,7 @@
         <!-- Friend Chat -->
         <view class="button-wrapper">
           <button class="feature-btn" @click="goFriendChat">
+            <view v-if="friendBadgeCount" class="badge-indicator">{{ friendBadgeDisplay }}</view>
             <view class="flex items-center gap-4">
               <view class="icon-circle from-[#DDB892] to-[#C9A87C]">
                 <Users class="w-7 h-7 text-white" :stroke-width="2" />
@@ -49,6 +50,7 @@
         <!-- Team activities -->
         <view class="button-wrapper">
           <button class="feature-btn" @click="goLinkedTasks">
+            <view v-if="activityBadgeCount" class="badge-indicator">{{ activityBadgeDisplay }}</view>
             <view class="flex items-center gap-4">
               <view class="icon-circle from-[#7E8C77] to-[#588157]">
                 <ListChecks class="w-7 h-7 text-white" :stroke-width="2" />
@@ -66,9 +68,13 @@
 </template>
 
 <script setup lang="ts">
-import { getCurrentInstance } from 'vue'
+import { computed, getCurrentInstance } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { MessageCircle, Users, ListChecks } from 'lucide-vue-next'
 import menuIcon from '@/static/gg_menu-left-alt.svg'
+import api from '@/api/index.js'
+import activitiesApi from '@/api/page/activities.js'
+import useNotificationStore from '@/api/utils/notificationStore'
 const icons = { menu: menuIcon }
 
 const navTo = (url: string) => {
@@ -80,6 +86,52 @@ const navTo = (url: string) => {
 const goAIChat = () => navTo('/pagesA/chat/ai_chat/index')
 const goFriendChat = () => navTo('/pagesA/chat/friend_chat/FriendList')
 const goLinkedTasks = () => navTo('/pagesA/activities/index')
+
+const notifications = useNotificationStore()
+const friendBadgeCount = notifications.friendUnreadTotal
+const activityBadgeCount = notifications.activityPendingCount
+
+const formatBadge = (count: number) => {
+  if (!count) return ''
+  return count > 99 ? '99+' : String(count)
+}
+
+const friendBadgeDisplay = computed(() => formatBadge(friendBadgeCount.value))
+const activityBadgeDisplay = computed(() => formatBadge(activityBadgeCount.value))
+
+async function refreshFriendNotifications () {
+  try {
+    const res = await api.friends.getMyFriendList()
+    const list = Array.isArray(res) ? res : []
+    notifications.applyFriendList(list)
+  } catch (error) {
+    console.warn('Failed to refresh friend notifications', error)
+  }
+}
+
+async function refreshActivityNotifications () {
+  try {
+    const uid = uni.getStorageSync('uid')
+    const params = uid ? { userId: uid } : {}
+    const response = await activitiesApi.overview(params)
+    const activities = Array.isArray(response?.data?.activities) ? response.data.activities : []
+    const pendingTotal = activities
+        .filter((activity: any) => activity?.host)
+        .reduce((sum: number, activity: any) => sum + (Array.isArray(activity?.pendingApplicants) ? activity.pendingApplicants.length : 0), 0)
+    notifications.setActivityPendingCount(pendingTotal)
+  } catch (error) {
+    console.warn('Failed to refresh activity notifications', error)
+    notifications.setActivityPendingCount(0)
+  }
+}
+
+async function refreshBadges () {
+  await Promise.all([refreshFriendNotifications(), refreshActivityNotifications()])
+}
+
+onShow(() => {
+  refreshBadges()
+})
 </script>
 
 <style scoped>
@@ -157,8 +209,27 @@ const goLinkedTasks = () => navTo('/pagesA/activities/index')
   display: flex;
   align-items: center;
   text-align: left;
+  position: relative;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
   transition: all 0.25s ease;
+}
+
+.badge-indicator {
+  position: absolute;
+  top: 16rpx;
+  right: 24rpx;
+  min-width: 42rpx;
+  height: 42rpx;
+  padding: 0 14rpx;
+  border-radius: 999rpx;
+  background: #f87171;
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 10rpx rgba(248, 113, 113, 0.35);
 }
 .feature-btn:hover {
   transform: translateY(-2px);
