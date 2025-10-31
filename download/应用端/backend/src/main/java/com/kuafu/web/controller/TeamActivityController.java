@@ -77,6 +77,14 @@ public class TeamActivityController {
         return ResultUtils.success(coordinator.apply(userId, id));
     }
 
+    @PostMapping("/{id}/accept-invite")
+    public BaseResponse<TeamActivityView> acceptInvite(
+            @RequestAttribute(name = "uid", required = false) Long uidFromToken,
+            @PathVariable("id") Long id,
+            @RequestParam(name = "userId", required = false) Long userIdParam) {
+        Long userId = resolveUserId(uidFromToken, userIdParam);
+        return ResultUtils.success(coordinator.acceptInvite(userId, id));
+    }
     @PostMapping("/{id}/decide")
     public BaseResponse<TeamActivityView> decide(
             @RequestAttribute(name = "uid", required = false) Long uidFromToken,

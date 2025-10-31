@@ -24,5 +24,14 @@ export default {
             url: `/team-activities/manage${query}`,
             method: 'get'
         })
+    },
+
+    /** 通过邀请直接加入活动 */
+    acceptInvite(activityId, params = {}) {
+        const query = buildQuery(params)
+        return service({
+            url: `/team-activities/${activityId}/accept-invite${query}`,
+            method: 'post'
+        })
     }
 }

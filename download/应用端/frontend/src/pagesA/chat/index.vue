@@ -101,7 +101,7 @@ const activityBadgeDisplay = computed(() => formatBadge(activityBadgeCount.value
 
 async function refreshFriendNotifications () {
   try {
-    const res = await api.friends.getMyFriendList()
+    const res = await api.page.friends.getMyFriendList()
     const list = Array.isArray(res) ? res : []
     notifications.applyFriendList(list)
   } catch (error) {

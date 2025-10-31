@@ -163,6 +163,53 @@ public class TeamActivityCoordinator {
     }
 
     @Transactional
+    public TeamActivityView acceptInvite(Long userId, Long activityId) {
+        TeamActivity activity = requireActivity(activityId);
+        if (Objects.equals(activity.getCreatorUserId(), userId)) {
+            return loadSingleView(activityId, userId);
+        }
+
+        boolean alreadyJoined = participantService.count(new LambdaQueryWrapper<TeamActivityParticipant>()
+                .eq(TeamActivityParticipant::getActivityId, activityId)
+                .eq(TeamActivityParticipant::getUserId, userId)) > 0;
+        if (alreadyJoined) {
+            return loadSingleView(activityId, userId);
+        }
+
+        long currentCount = participantService.count(new LambdaQueryWrapper<TeamActivityParticipant>()
+                .eq(TeamActivityParticipant::getActivityId, activityId));
+        if (currentCount >= activity.getMaxParticipants()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "This activity is already full");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        TeamActivityApplication application = applicationService.getOne(new LambdaQueryWrapper<TeamActivityApplication>()
+                .eq(TeamActivityApplication::getActivityId, activityId)
+                .eq(TeamActivityApplication::getApplicantUserId, userId)
+                .last("LIMIT 1"));
+        if (application != null && !STATUS_APPROVED.equals(application.getStatus())) {
+            application.setStatus(STATUS_APPROVED);
+            application.setDecisionAt(now);
+            application.setDecisionBy(activity.getCreatorUserId());
+            applicationService.updateById(application);
+        }
+
+        participantService.save(TeamActivityParticipant.builder()
+                .activityId(activityId)
+                .userId(userId)
+                .host(Boolean.FALSE)
+                .joinedAt(now)
+                .build());
+
+        ensureReminderForUser(activity, userId);
+
+        activity.setUpdatedAt(now);
+        teamActivityService.updateById(activity);
+        return loadSingleView(activityId, userId);
+    }
+
+    @Transactional
     public TeamActivityView decide(Long userId, Long activityId, DecideTeamActivityRequest request) {
         TeamActivity activity = requireActivity(activityId);
         ensureHost(userId, activity);
