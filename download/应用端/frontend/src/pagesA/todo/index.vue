@@ -158,7 +158,7 @@
         </div>
       </section>
 
-      <!-- ===== 勋章墙按钮（白卡片样式 + 图标分隔） ===== -->
+      <!-- ===== 勋章墙按钮 ===== -->
       <div
           class="mt-10 bg-white rounded-3xl p-6 text-[#1D1D1D]
                shadow-[0_6px_16px_rgba(0,0,0,0.08)]
@@ -167,12 +167,9 @@
           @click="goShowModel"
       >
         <div class="flex items-center gap-4">
-          <!-- 图标区 -->
           <div class="w-14 h-14 rounded-2xl bg-[#F1F4EF] flex items-center justify-center">
             <Medal class="w-7 h-7 text-[#7E8C77]" :stroke-width="2" />
           </div>
-
-          <!-- 文本区 -->
           <div>
             <h3 class="text-xl font-semibold tracking-tight">Wall of Medals</h3>
             <p class="text-sm text-gray-500">
@@ -181,7 +178,6 @@
           </div>
         </div>
       </div>
-
 
       <!-- ===== 悬浮“添加”按钮 ===== -->
       <button
@@ -192,6 +188,8 @@
       >
         +
       </button>
+
+      <!-- ✅ 测试按钮已删除 -->
     </div>
   </base-layout>
 </template>
@@ -199,24 +197,141 @@
 <script setup lang="ts">
 import { ref, computed, getCurrentInstance, onMounted } from 'vue'
 import { CheckCircle2, Circle, Medal, Sparkles } from 'lucide-vue-next'
+import { LocalNotifications } from '@capacitor/local-notifications'
+
 const { proxy } = getCurrentInstance()
 
+/* ===== 通知相关 ===== */
+const NOON_NOTICE_ID = 888000  // 中午那条固定 id
 
+async function ensureNotifPermission() {
+  try {
+    const perm = await LocalNotifications.checkPermissions()
+    if (perm.display !== 'granted') {
+      await LocalNotifications.requestPermissions()
+    }
+  } catch (e) {
+    console.warn('permission check failed:', e)
+  }
+}
 
-/* Bonus 任务 */
+function notifIdFromTaskId(id: string): number {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return (h % 2147480000) + 1000
+}
 
-/* 数据库读取任务 */
+function nextFireDate(reminderISO: string): Date {
+  const now = new Date()
+  const t = new Date(reminderISO)
+  return t.getTime() > now.getTime() ? t : new Date(now.getTime() + 10 * 60 * 1000)
+}
+
+async function cancelAllPending() {
+  try {
+    const pending = await LocalNotifications.getPending()
+    if (pending?.notifications?.length) {
+      await LocalNotifications.cancel({ notifications: pending.notifications })
+    }
+  } catch (e) {
+    console.warn('cancelAllPending failed:', e)
+  }
+}
+
+async function scheduleForUnfinished(reminderRows: any[]) {
+  await ensureNotifPermission()
+  const unfinished = reminderRows.filter(r => !r.is_completed)
+  if (!unfinished.length) return
+
+  const notifications = unfinished.map(r => ({
+    id: notifIdFromTaskId(String(r.reminder_item_id)),
+    title: 'Todo Reminder',
+    body: r.title + (r.description ? ` — ${r.description}` : ''),
+    schedule: { at: nextFireDate(String(r.reminder_time)) },
+    channelId: 'todo-reminders',
+    smallIcon: 'ic_stat_icon',
+    extra: { taskId: r.reminder_item_id }
+  }))
+
+  try {
+    await LocalNotifications.schedule({ notifications })
+  } catch (e) {
+    console.warn('schedule failed:', e)
+  }
+}
+
+async function cancelForTask(taskId: string) {
+  try {
+    await LocalNotifications.cancel({ notifications: [{ id: notifIdFromTaskId(String(taskId)) }] })
+  } catch (e) {
+    console.warn('cancelForTask failed:', e)
+  }
+}
+
+async function handleTaskToggled(row: any) {
+  if (row.is_completed) {
+    await cancelForTask(row.reminder_item_id)
+  } else {
+    await scheduleForUnfinished([row])
+  }
+}
+
+// 每天中午 12:00 的提醒
+async function scheduleDailyNoonNotice() {
+  await ensureNotifPermission()
+
+  const now = new Date()
+  const noon = new Date()
+  noon.setHours(12, 0, 0, 0)
+  if (noon.getTime() <= now.getTime()) {
+    noon.setDate(noon.getDate() + 1)
+  }
+
+  try {
+    // 避免重复，先取消
+    await LocalNotifications.cancel({ notifications: [{ id: NOON_NOTICE_ID }] })
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: NOON_NOTICE_ID,
+          title: 'Daily Tasks',
+          body: '记得完成今天的系统任务和 Bonus 任务～',
+          schedule: { at: noon },
+          channelId: 'todo-reminders',
+          smallIcon: 'ic_stat_icon'
+        }
+      ]
+    })
+  } catch (e) {
+    console.warn('scheduleDailyNoonNotice failed:', e)
+  }
+}
+
+async function initNotificationChannel() {
+  try {
+    await LocalNotifications.createChannel({
+      id: 'todo-reminders',
+      name: 'Todo Reminders',
+      description: 'Daily todo reminders',
+      importance: 4,
+    })
+  } catch (e) {
+    // iOS / web 忽略
+  }
+}
+
+/* ===== 数据区 ===== */
 const reminders = ref<any[]>([])
 const loading = ref(false)
 const generatingAi = ref(false)
 const generatingBonus = ref(false)
+
 function getTodayRange() {
   const now = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
   return { start, end }
 }
-
 
 const toDate = (v: string) => new Date(String(v).replace(/-/g, '/'))
 const isHighPriority = (priority: string | null | undefined) => String(priority || '').toLowerCase() === 'high'
@@ -225,7 +340,7 @@ const isSuperHighPriority = (priority: string | null | undefined) => String(prio
 async function fetchReminders() {
   try {
     loading.value = true
-    const userRes = await proxy.$cf.login.getLoginUser()
+    const userRes = await proxy?.$cf?.login?.getLoginUser?.()
     if (!userRes?.success) return
     const res = await proxy.$cf.table.list({
       table_name: 'reminder_item',
@@ -236,20 +351,31 @@ async function fetchReminders() {
     })
     const { start, end } = getTodayRange()
     const rows = res?.success ? res.data : []
-    reminders.value = rows.filter(r => {
+    reminders.value = rows.filter((r: any) => {
       const t = toDate(r.reminder_time)
       return t >= start && t <= end
     })
   } finally {
     loading.value = false
   }
+
+  // 进页面后：清空 -> 对所有今天未完成的任务排通知 -> 再排中午的提醒
+  try {
+    await cancelAllPending()
+    await scheduleForUnfinished(reminders.value)
+    await scheduleDailyNoonNotice()
+  } catch (e) {
+    console.warn('refresh schedule failed:', e)
+  }
 }
+
 function formatTime(dt: string) {
   const d = toDate(dt)
   const hh = String(d.getHours()).padStart(2, '0')
   const mm = String(d.getMinutes()).padStart(2, '0')
   return `${hh}:${mm}`
 }
+
 const highPriorityTasks = computed(() =>
     reminders.value
         .filter(r => isHighPriority(r.priority))
@@ -287,6 +413,7 @@ const customTasks = computed(() =>
           completed: !!r.is_completed,
         }))
 )
+
 async function toggleDbTask(id: string) {
   const item = reminders.value.find(r => r.reminder_item_id === id)
   if (!item) return
@@ -296,14 +423,19 @@ async function toggleDbTask(id: string) {
     table_name: 'reminder_item',
     param: { reminder_item_id: id, is_completed: next },
   })
+
+  try {
+    await handleTaskToggled(item)
+  } catch (e) {
+    console.warn('toggle notif failed:', e)
+  }
 }
+
 type GenerationMode = 'regular' | 'bonus'
 
 async function runAiGeneration(mode: GenerationMode) {
   const state = mode === 'bonus' ? generatingBonus : generatingAi
-  if (state.value) {
-    return
-  }
+  if (state.value) return
   state.value = true
   const hasUni = typeof uni !== 'undefined'
   const loadingTitle = mode === 'bonus' ? 'Planning bonus...' : 'Planning...'
@@ -322,12 +454,9 @@ async function runAiGeneration(mode: GenerationMode) {
     await fetchReminders()
     const defaultCount = mode === 'bonus' ? 1 : 3
     const resolvedCount = taskCount || defaultCount
-    const fallbackLabel = (() => {
-      if (mode === 'bonus') {
-        return resolvedCount > 1 ? 'bonus tasks' : 'bonus task'
-      }
-      return resolvedCount > 1 ? 'tasks' : 'task'
-    })()
+    const fallbackLabel = mode === 'bonus'
+        ? (resolvedCount > 1 ? 'bonus tasks' : 'bonus task')
+        : (resolvedCount > 1 ? 'tasks' : 'task')
     const successMessage = summary || `AI added ${resolvedCount} ${fallbackLabel} for today`
     if (proxy?.$cf?.toast) {
       proxy.$cf.toast({ message: successMessage, level: 'success' })
@@ -350,13 +479,8 @@ async function runAiGeneration(mode: GenerationMode) {
   }
 }
 
-function generateAiTodos() {
-  return runAiGeneration('regular')
-}
-
-function generateAiBonusTodos() {
-  return runAiGeneration('bonus')
-}
+function generateAiTodos() { return runAiGeneration('regular') }
+function generateAiBonusTodos() { return runAiGeneration('bonus') }
 
 /* 积分逻辑 */
 const totalPoints = computed(() =>
@@ -391,54 +515,50 @@ async function addMedalRecord() {
     medal_date: new Date().toISOString(),
     medal_points: totalPoints.value,
   }
-  await proxy.$cf.table.insert({
-    table_name: 'medal_wall',
-    param: medalData,
-  })
+  await proxy.$cf.table.insert({ table_name: 'medal_wall', param: medalData })
 }
 
 /* 页面跳转 */
 function goAddTask() {
   const url = '/pagesA/todo/add_task/index'
-  proxy?.$cf?.navigate?.to ? proxy.$cf.navigate.to({ url }) : uni.navigateTo({ url })
+  // @ts-ignore
+  return proxy?.$cf?.navigate?.to ? proxy.$cf.navigate.to({ url }) : (typeof uni !== 'undefined' ? uni.navigateTo({ url }) : void 0)
 }
 function goShowModel() {
   const url = '/pagesA/todo/show_modal/leaderboard/index'
-  proxy?.$cf?.navigate?.to ? proxy.$cf.navigate.to({ url }) : uni.navigateTo({ url })
+  // @ts-ignore
+  return proxy?.$cf?.navigate?.to ? proxy.$cf.navigate.to({ url }) : (typeof uni !== 'undefined' ? uni.navigateTo({ url }) : void 0)
 }
 function goWinModel() {
   const url = '/pagesA/todo/win_modal/index'
-  proxy?.$cf?.navigate?.to ? proxy.$cf.navigate.to({ url }) : uni.navigateTo({ url })
+  // @ts-ignore
+  return proxy?.$cf?.navigate?.to ? proxy.$cf.navigate.to({ url }) : (typeof uni !== 'undefined' ? uni.navigateTo({ url }) : void 0)
 }
 
-onMounted(fetchReminders)
-
-
+onMounted(async () => {
+  await initNotificationChannel()
+  await fetchReminders()
+})
 </script>
 
 <style scoped>
-/* ===== 顶部栏样式 ===== */
 .topbar {
-  position: sticky;        /* 关键点：滚动时固定顶部 */
+  position: sticky;
   top: 0;
-  z-index: 999; /* 提升层级，压过底部tabbar或背景 */           /* 确保在内容之上 */
+  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 112rpx;          /* 约等于 56px */
+  height: 112rpx;
   width: 100%;
-  background: #fff;        /* 白色背景覆盖下方内容 */
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04); /* 轻微阴影 */
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
-
-/* 左边三横图标贴左 */
 .icon {
   width: 64rpx;
   height: 48rpx;
   margin-left: 20rpx;
 }
-
-/* 居中标题 */
 .title {
   flex: 1;
   text-align: center;
@@ -446,24 +566,14 @@ onMounted(fetchReminders)
   font-weight: 700;
   color: #1d1d1d;
 }
-
-/* 右侧平衡用占位 */
 .right-spacer {
   width: 80rpx;
 }
-
-
 .animate-fade-card {
   animation: fade-card 0.3s ease-out both;
 }
 @keyframes fade-card {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 </style>
