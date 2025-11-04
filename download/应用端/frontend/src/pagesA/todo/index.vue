@@ -45,18 +45,20 @@
         <h4 class="mb-3 text-[#7E8C77] font-semibold text-base">
           System Tasks (1 pt each)
         </h4>
-        <div class="space-y-4">
+        <div v-if="loading" class="text-center text-gray-400 py-4">Loading...</div>
+        <div v-else-if="highPriorityTasks.length" class="space-y-4">
           <div
-              v-for="task in systemTasks"
+              v-for="task in highPriorityTasks"
               :key="task.id"
               class="rounded-2xl p-5 bg-white shadow-sm flex items-center justify-between
                    transition hover:-translate-y-0.5 duration-200 animate-fade-card"
               :class="task.completed ? 'opacity-60 line-through' : ''"
-              @click="toggleLocalTask(task.id)"
+              @click="toggleDbTask(task.id)"
           >
             <div>
               <h4 class="text-lg font-medium">{{ task.title }}</h4>
-              <p class="text-sm text-gray-500">{{ task.subtitle }}</p>
+              <p v-if="task.description" class="text-sm text-gray-500">{{ task.description }}</p>
+              <p class="text-xs text-gray-400 mt-1">Due {{ task.subtitle }}</p>
             </div>
             <CheckCircle2
                 v-if="task.completed"
@@ -66,6 +68,19 @@
             <Circle v-else class="w-6 h-6 text-gray-300" :stroke-width="2" />
           </div>
         </div>
+        <div v-else class="relative">
+          <div class="h-36 rounded-3xl bg-white/40 backdrop-blur-sm border border-dashed border-[#A3B18A]/40"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <button
+                class="px-5 h-14 rounded-full bg-white text-[#7E8C77] font-semibold shadow-lg flex items-center gap-2 border border-[#A3B18A]/40 transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                @click="generateAiTodos"
+                :disabled="generatingAi"
+            >
+              <Sparkles class="w-5 h-5" :stroke-width="2" />
+              <span>{{ generatingAi ? 'Planning…' : 'AI Boost' }}</span>
+            </button>
+          </div>
+        </div>
       </section>
 
       <!-- ===== Bonus 任务 ===== -->
@@ -73,18 +88,20 @@
         <h4 class="mb-3 text-[#7E8C77] font-semibold text-base">
           Bonus Tasks (2 pts each)
         </h4>
-        <div class="space-y-4">
+        <div v-if="loading" class="text-center text-gray-400 py-4">Loading...</div>
+        <div v-else-if="bonusTasks.length" class="space-y-4">
           <div
               v-for="task in bonusTasks"
               :key="task.id"
               class="rounded-2xl p-5 bg-white shadow-sm flex items-center justify-between
                    transition hover:-translate-y-0.5 duration-200 animate-fade-card"
               :class="task.completed ? 'opacity-60 line-through' : ''"
-              @click="toggleBonusTask(task.id)"
+              @click="toggleDbTask(task.id)"
           >
             <div>
               <h4 class="text-lg font-medium">{{ task.title }}</h4>
-              <p class="text-sm text-gray-500">{{ task.subtitle }}</p>
+              <p v-if="task.description" class="text-sm text-gray-500">{{ task.description }}</p>
+              <p class="text-xs text-gray-400 mt-1">Due {{ task.subtitle }}</p>
             </div>
             <CheckCircle2
                 v-if="task.completed"
@@ -92,6 +109,19 @@
                 :stroke-width="2"
             />
             <Circle v-else class="w-6 h-6 text-gray-300" :stroke-width="2" />
+          </div>
+        </div>
+        <div v-else class="relative">
+          <div class="h-36 rounded-3xl bg-white/40 backdrop-blur-sm border border-dashed border-[#C9A87C]/40"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <button
+                class="px-5 h-14 rounded-full bg-white text-[#C9A87C] font-semibold shadow-lg flex items-center gap-2 border border-[#C9A87C]/40 transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                @click="generateAiBonusTodos"
+                :disabled="generatingBonus"
+            >
+              <Sparkles class="w-5 h-5" :stroke-width="2" />
+              <span>{{ generatingBonus ? 'Planning…' : 'AI Bonus' }}</span>
+            </button>
           </div>
         </div>
       </section>
@@ -152,6 +182,7 @@
         </div>
       </div>
 
+
       <!-- ===== 悬浮“添加”按钮 ===== -->
       <button
           class="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#A3B18A] to-[#7E8C77]
@@ -167,30 +198,18 @@
 
 <script setup lang="ts">
 import { ref, computed, getCurrentInstance, onMounted } from 'vue'
-import { CheckCircle2, Circle, Medal } from 'lucide-vue-next'
+import { CheckCircle2, Circle, Medal, Sparkles } from 'lucide-vue-next'
 const { proxy } = getCurrentInstance()
 
-/* 固定任务 */
-const systemTasks = ref([
-  { id: '1', title: 'Morning Walk', subtitle: 'Complete 30 minutes of outdoor activity', points: 1, completed: false },
-  { id: '2', title: 'Hydration Reminder', subtitle: 'Drink 8 cups of water', points: 1, completed: true },
-  { id: '3', title: 'Healthy Eating', subtitle: 'Record your 3 meals', points: 1, completed: false },
-])
-function toggleLocalTask(id: string) {
-  systemTasks.value = systemTasks.value.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
-}
+
 
 /* Bonus 任务 */
-const bonusTasks = ref([
-  { id: 'B1', title: 'Mindful Moment', subtitle: 'Spend 10 minutes meditating or relaxing', points: 2, completed: false },
-])
-function toggleBonusTask(id: string) {
-  bonusTasks.value = bonusTasks.value.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
-}
 
 /* 数据库读取任务 */
 const reminders = ref<any[]>([])
 const loading = ref(false)
+const generatingAi = ref(false)
+const generatingBonus = ref(false)
 function getTodayRange() {
   const now = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
@@ -200,6 +219,8 @@ function getTodayRange() {
 
 
 const toDate = (v: string) => new Date(String(v).replace(/-/g, '/'))
+const isHighPriority = (priority: string | null | undefined) => String(priority || '').toLowerCase() === 'high'
+const isSuperHighPriority = (priority: string | null | undefined) => String(priority || '').toLowerCase() === 'superhigh'
 
 async function fetchReminders() {
   try {
@@ -229,14 +250,42 @@ function formatTime(dt: string) {
   const mm = String(d.getMinutes()).padStart(2, '0')
   return `${hh}:${mm}`
 }
+const highPriorityTasks = computed(() =>
+    reminders.value
+        .filter(r => isHighPriority(r.priority))
+        .map(r => ({
+          id: r.reminder_item_id,
+          title: r.title,
+          description: r.description,
+          subtitle: formatTime(r.reminder_time),
+          points: 1,
+          completed: !!r.is_completed,
+        }))
+)
+
+const bonusTasks = computed(() =>
+    reminders.value
+        .filter(r => isSuperHighPriority(r.priority))
+        .map(r => ({
+          id: r.reminder_item_id,
+          title: r.title,
+          description: r.description,
+          subtitle: formatTime(r.reminder_time),
+          points: 2,
+          completed: !!r.is_completed,
+        }))
+)
+
 const customTasks = computed(() =>
-    reminders.value.map(r => ({
-      id: r.reminder_item_id,
-      title: r.title,
-      subtitle: formatTime(r.reminder_time),
-      points: 0.5,
-      completed: !!r.is_completed,
-    }))
+    reminders.value
+        .filter(r => !isHighPriority(r.priority) && !isSuperHighPriority(r.priority))
+        .map(r => ({
+          id: r.reminder_item_id,
+          title: r.title,
+          subtitle: formatTime(r.reminder_time),
+          points: 0.5,
+          completed: !!r.is_completed,
+        }))
 )
 async function toggleDbTask(id: string) {
   const item = reminders.value.find(r => r.reminder_item_id === id)
@@ -248,10 +297,70 @@ async function toggleDbTask(id: string) {
     param: { reminder_item_id: id, is_completed: next },
   })
 }
+type GenerationMode = 'regular' | 'bonus'
+
+async function runAiGeneration(mode: GenerationMode) {
+  const state = mode === 'bonus' ? generatingBonus : generatingAi
+  if (state.value) {
+    return
+  }
+  state.value = true
+  const hasUni = typeof uni !== 'undefined'
+  const loadingTitle = mode === 'bonus' ? 'Planning bonus...' : 'Planning...'
+  try {
+    if (hasUni && typeof uni.showLoading === 'function') {
+      uni.showLoading({ title: loadingTitle })
+    }
+    const res = await (mode === 'bonus'
+        ? proxy?.$cf?.todo?.generateAiBonusSuggestions?.()
+        : proxy?.$cf?.todo?.generateAiSuggestions?.())
+    if (!res?.success) {
+      throw new Error(res?.message || (mode === 'bonus' ? 'Failed to generate AI bonus tasks' : 'Failed to generate AI tasks'))
+    }
+    const summary = res?.data?.summary
+    const taskCount = Array.isArray(res?.data?.tasks) ? res.data.tasks.length : 0
+    await fetchReminders()
+    const defaultCount = mode === 'bonus' ? 1 : 3
+    const resolvedCount = taskCount || defaultCount
+    const fallbackLabel = (() => {
+      if (mode === 'bonus') {
+        return resolvedCount > 1 ? 'bonus tasks' : 'bonus task'
+      }
+      return resolvedCount > 1 ? 'tasks' : 'task'
+    })()
+    const successMessage = summary || `AI added ${resolvedCount} ${fallbackLabel} for today`
+    if (proxy?.$cf?.toast) {
+      proxy.$cf.toast({ message: successMessage, level: 'success' })
+    } else if (hasUni && typeof uni.showToast === 'function') {
+      uni.showToast({ title: successMessage, icon: 'success', duration: 2000 })
+    }
+  } catch (error: any) {
+    const fallbackLabel = mode === 'bonus' ? 'AI bonus task' : 'AI tasks'
+    const message = error?.message || `Failed to generate ${fallbackLabel}`
+    if (proxy?.$cf?.toast) {
+      proxy.$cf.toast({ message, level: 'error' })
+    } else if (hasUni && typeof uni.showToast === 'function') {
+      uni.showToast({ title: message, icon: 'none', duration: 2000 })
+    }
+  } finally {
+    state.value = false
+    if (hasUni && typeof uni.hideLoading === 'function') {
+      uni.hideLoading()
+    }
+  }
+}
+
+function generateAiTodos() {
+  return runAiGeneration('regular')
+}
+
+function generateAiBonusTodos() {
+  return runAiGeneration('bonus')
+}
 
 /* 积分逻辑 */
 const totalPoints = computed(() =>
-    [...systemTasks.value, ...bonusTasks.value, ...customTasks.value]
+    [...highPriorityTasks.value, ...bonusTasks.value, ...customTasks.value]
         .filter(t => t.completed)
         .reduce((sum, t) => sum + t.points, 0)
 )

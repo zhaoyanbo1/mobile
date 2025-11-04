@@ -25,7 +25,7 @@ token:
 #mysql
 spring:
   profiles:
-    active: ${DB_TYPE:sqlite}
+    active: ${DB_TYPE:mysql}
   jackson:
     date-format: "yyyy-MM-dd HH:mm:ss"
     time-zone: GMT+10:30

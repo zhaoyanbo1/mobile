@@ -12,17 +12,17 @@
     <base-tabBar v-if="isTab" :tabList="tabList" />
 
     <!-- Floating entry to AI Coach -->
-    <view
-        v-if="showCoachButton"
-        class="ai-coach-button"
-        :style="coachButtonStyle"
-        role="button"
-        tabindex="0"
-        @click="goAiChat"
-        @keyup.enter="goAiChat"
-    >
-      ask AI Coach
-    </view>
+<!--    <view-->
+<!--        v-if="showCoachButton"-->
+<!--        class="ai-coach-button"-->
+<!--        :style="coachButtonStyle"-->
+<!--        role="button"-->
+<!--        tabindex="0"-->
+<!--        @click="goAiChat"-->
+<!--        @keyup.enter="goAiChat"-->
+<!--    >-->
+<!--      ask AI Coach-->
+<!--    </view>-->
   </view>
 </template>
 
