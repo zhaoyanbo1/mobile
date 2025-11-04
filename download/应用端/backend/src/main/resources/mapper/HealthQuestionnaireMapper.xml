@@ -1,5 +1,27 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <mapper namespace="com.kuafu.web.mapper.HealthQuestionnaireMapper">
+
+    <!-- 只查必要两列，避免触发任何“敏感列”拦截 -->
+    <select id="selectWeeklyByUser" resultType="map">
+        SELECT
+            hq.health_questionnaire_id   AS creationTime,
+            hq.total_score     AS totalScore
+        FROM health_questionnaire hq
+        WHERE hq.user_info_user_info_id_1 = #{userId}
+        ORDER BY hq.health_questionnaire_id DESC
+            LIMIT #{limit}
+    </select>
+
+    <select id="selectLatestRiskLevel" resultType="string">
+        SELECT hq.risk_level
+        FROM health_questionnaire hq
+        WHERE hq.user_info_user_info_id_1 = #{userId}
+        ORDER BY hq.health_questionnaire_id DESC
+            LIMIT 1
+    </select>
+
 
 </mapper>

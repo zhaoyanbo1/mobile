@@ -224,7 +224,7 @@ function notifIdFromTaskId(id: string): number {
 function nextFireDate(reminderISO: string): Date {
   const now = new Date()
   const t = new Date(reminderISO)
-  return t.getTime() > now.getTime() ? t : new Date(now.getTime() + 10 * 60 * 1000)
+  return t.getTime() > now.getTime() ? t : new Date(now.getTime())
 }
 
 async function cancelAllPending() {
@@ -439,8 +439,18 @@ async function runAiGeneration(mode: GenerationMode) {
   state.value = true
   const hasUni = typeof uni !== 'undefined'
   const loadingTitle = mode === 'bonus' ? 'Planning bonus...' : 'Planning...'
+  const cfLoading = proxy?.$cf?.loading
+  let usedCfLoading = false
   try {
-    if (hasUni && typeof uni.showLoading === 'function') {
+    if (cfLoading?.showLoading) {
+      try {
+        cfLoading.showLoading({ title: loadingTitle })
+        usedCfLoading = true
+      } catch (e) {
+        console.warn('failed to open cf loading:', e)
+      }
+    }
+    if (!usedCfLoading && hasUni && typeof uni.showLoading === 'function') {
       uni.showLoading({ title: loadingTitle })
     }
     const res = await (mode === 'bonus'
@@ -473,6 +483,13 @@ async function runAiGeneration(mode: GenerationMode) {
     }
   } finally {
     state.value = false
+    if (usedCfLoading && cfLoading?.hideLoading) {
+      try {
+        cfLoading.hideLoading()
+      } catch (e) {
+        console.warn('failed to close cf loading:', e)
+      }
+    }
     if (hasUni && typeof uni.hideLoading === 'function') {
       uni.hideLoading()
     }

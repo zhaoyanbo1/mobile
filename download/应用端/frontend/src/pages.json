@@ -42,7 +42,8 @@
           "navigationBarTitleText": "",
           "navigationStyle": "default",
           "enableShareAppMessage": true,
-          "enableShareTimeline": true
+          "enableShareTimeline": true,
+          "navigationStyle": "custom"
         }
       },
 
@@ -52,7 +53,8 @@
           "navigationBarTitleText": "",
           "navigationStyle": "default",
           "enableShareAppMessage": true,
-          "enableShareTimeline": true
+          "enableShareTimeline": true,
+          "navigationStyle": "custom"
         }
       },
 
@@ -120,13 +122,15 @@
   {
     "path": "chat/friend_chat/FriendList",
     "style": {
-      "navigationBarTitleText": "My friend"
+      "navigationBarTitleText": "My friend",
+      "navigationStyle": "custom"
     }
   },
   {
     "path": "chat/friend_chat/ChatRoom",
     "style": {
-      "navigationBarTitleText": "chat with my friend"
+      "navigationBarTitleText": "chat with my friend",
+      "navigationStyle": "custom"
     }
   },
 

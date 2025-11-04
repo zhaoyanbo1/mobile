@@ -2,32 +2,50 @@
 <template>
   <base-layout>
     <view class="page">
+      <!-- 顶部栏：跟 Add Task 一致 -->
       <view class="topbar">
-        <button class="ghost-btn" @click="openCreateModal">
-          <image :src="icons.plus" mode="aspectFit" class="ghost-icon" />
-          <text class="ghost-text">Create</text>
-        </button>
+        <view class="back-wrap" @click="goBack">
+          <text class="back-icon"><</text>
+        </view>
         <text class="title">Team activities</text>
-        <button class="ghost-btn right" @click="goManage">
-          <text class="ghost-text">My activities</text>
+        <view class="right-spacer"></view>
+      </view>
+
+      <!-- 顶部工具行：Create / My activities -->
+      <view class="toolbar">
+        <button class="pill-btn primary" @click="openCreateModal">
+          <image :src="icons.plus" mode="aspectFit" class="pill-icon" />
+          <text class="pill-text">Create</text>
+        </button>
+        <button class="pill-btn ghost" @click="goManage">
+          <text class="pill-text">My activities</text>
         </button>
       </view>
 
+      <!-- 错误提示 -->
       <view v-if="error" class="error-banner">
         <text>{{ error }}</text>
       </view>
 
-      <view class="schedule" v-if="mySchedule.length">
-        <text class="schedule-title">Upcoming reminders</text>
+      <!-- 即将到来的提醒 -->
+      <view class="section-card" v-if="mySchedule.length">
+        <text class="section-title">Upcoming reminders</text>
         <view class="schedule-list">
-          <view class="schedule-item" v-for="item in mySchedule" :key="`${item.id}-${item.userId}`">
+          <view
+              class="schedule-item"
+              v-for="item in mySchedule"
+              :key="`${item.id}-${item.userId}`"
+          >
             <text class="schedule-name">{{ item.title }}</text>
             <text class="schedule-time">{{ item.time }} · {{ item.location }}</text>
-            <text class="schedule-meta">{{ item.userId === currentUser.id ? 'You' : item.userName }}</text>
+            <text class="schedule-meta">
+              {{ item.userId === currentUser.id ? 'You' : item.userName }}
+            </text>
           </view>
         </view>
       </view>
 
+      <!-- 活动列表 -->
       <scroll-view class="activities" scroll-y>
         <view
             class="activity-card"
@@ -36,9 +54,15 @@
         >
           <view class="card-header">
             <text class="card-title">{{ activity.title }}</text>
-            <text class="card-creator">Host · {{ activity.creator.id === currentUser.id ? 'You' : activity.creator.name }}</text>
+            <text class="card-creator">
+              Host · {{ activity.creator.id === currentUser.id ? 'You' : activity.creator.name }}
+            </text>
           </view>
-          <text class="card-description">{{ activity.description }}</text>
+
+          <text class="card-description" v-if="activity.description">
+            {{ activity.description }}
+          </text>
+
           <view class="card-info">
             <text class="info-row">🗓 {{ activity.time }}</text>
             <text class="info-row">📍 {{ activity.location }}</text>
@@ -51,6 +75,7 @@
             <text v-if="activity.full" class="tag tag-muted">Full</text>
           </view>
 
+          <!-- 主按钮：和 Add Task 的 Save 一致配色 -->
           <button
               class="primary-btn"
               :class="{ disabled: isApplyDisabled(activity) }"
@@ -70,9 +95,13 @@
         </view>
       </scroll-view>
 
+      <!-- 创建弹窗 -->
       <view v-if="showCreate" class="modal-mask" @click.self="closeCreateModal">
         <view class="modal">
-          <text class="modal-title">Create activity</text>
+          <view class="modal-head">
+            <text class="modal-title">Create activity</text>
+            <text class="modal-close" @click="closeCreateModal">×</text>
+          </view>
 
           <view class="form-field">
             <text class="label">Title</text>
@@ -85,7 +114,11 @@
 
           <view class="form-field">
             <text class="label">Description</text>
-            <textarea class="textarea" v-model.trim="createForm.description" placeholder="What will you do?" />
+            <textarea
+                class="textarea"
+                v-model.trim="createForm.description"
+                placeholder="What will you do?"
+            />
           </view>
 
           <view class="form-field">
@@ -107,27 +140,25 @@
             />
           </view>
 
-          <view class="form-field columns">
-            <view>
+          <view class="form-field row">
+            <view class="col">
               <text class="label">Min people</text>
               <picker
                   mode="selector"
                   :range="participantOptions"
                   :value="getParticipantIndex(createForm.minParticipants)"
                   @change="onSelectMin"
-                  class="picker"
               >
                 <view class="picker-display">{{ createForm.minParticipants }} people</view>
               </picker>
             </view>
-            <view>
+            <view class="col">
               <text class="label">Max people</text>
               <picker
                   mode="selector"
                   :range="participantOptions"
                   :value="getParticipantIndex(createForm.maxParticipants)"
                   @change="onSelectMax"
-                  class="picker"
               >
                 <view class="picker-display">{{ createForm.maxParticipants }} people</view>
               </picker>
@@ -137,8 +168,10 @@
           <text v-if="formError" class="error">{{ formError }}</text>
 
           <view class="modal-actions">
-            <button class="ghost-btn" @click="closeCreateModal"><text class="ghost-text">Cancel</text></button>
-            <button class="primary-btn" @click="submitCreate" :disabled="submitting">
+            <button class="pill-btn ghost" @click="closeCreateModal">
+              <text class="pill-text">Cancel</text>
+            </button>
+            <button class="pill-btn primary" @click="submitCreate" :disabled="submitting">
               <text>{{ submitting ? 'Saving…' : 'Create' }}</text>
             </button>
           </view>
@@ -176,6 +209,10 @@ const schedule = ref([])
 const participantOptions = Object.freeze(Array.from({ length: 9 }, (_, index) => index + 2))
 
 const mySchedule = computed(() => schedule.value)
+
+function goBack () {
+  history.length > 1 ? history.back() : uni.switchTab({ url: '/pages/index/index' })
+}
 
 function resetCreateForm () {
   createForm.title = ''
@@ -251,12 +288,8 @@ function onSelectMax (event) {
 function normalizePickerValue (value) {
   if (!value) return ''
   const raw = String(value).replace('T', ' ').replace(/Z$/, '').trim()
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)) {
-    return raw
-  }
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw)) {
-    return `${raw}:00`
-  }
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)) return raw
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw)) return `${raw}:00`
   const parsed = new Date(value)
   if (!Number.isNaN(parsed.getTime())) {
     const y = parsed.getFullYear()
@@ -307,9 +340,9 @@ function getAuthHeaders () {
 }
 
 async function callApi (method, url, data, query = {}) {
-  const base = ''
+  const base = 'http://40.82.192.142'
   const q = new URLSearchParams(query).toString()
-  const full = base + url + (q ? `?${q}` : '')
+  const full = `${base}${url}${q ? `?${q}` : ''}`
   const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() }
 
   return new Promise((resolve, reject) => {
@@ -422,12 +455,12 @@ async function apply (activity) {
     goManage()
     return
   }
-  if (isApplyDisabled(activity)) {
-    return
-  }
+  if (isApplyDisabled(activity)) return
   try {
     const user = await ensureUser()
-    await callApi('POST', `/api/team-activities/${activity.id}/apply`, null, { userId: user.id })
+    await callApi('POST', `/api/team-activities/${activity.id}/apply`, null, {
+      userId: user.id
+    })
     uni.showToast({ title: 'Application sent', icon: 'success' })
     await loadOverview()
   } catch (err) {
@@ -445,328 +478,326 @@ onShow(() => {
 </script>
 
 <style scoped>
-:root {
-  --bg: #f6f7fb;
-  --text: #131313;
-  --muted: #5f6677;
-  --accent: #4b74ff;
-  --safe: #3fb68b;
-  --pending: #f4a259;
-  --disabled: #ccd2dc;
-  --card: #ffffff;
-  --shadow: 0 12rpx 32rpx rgba(15, 15, 40, 0.08);
-}
-
 .page {
   min-height: 100vh;
-  background: var(--bg);
+  background: #f8f8f8;
   display: flex;
   flex-direction: column;
 }
 
+/* 顶部栏 */
 .topbar {
   display: grid;
-  grid-template-columns: 220rpx 1fr 220rpx;
+  grid-template-columns: 80rpx 1fr 80rpx;
   align-items: center;
-  padding: 32rpx 30rpx 16rpx;
+  height: 120rpx;
+  background: #fff;
+  padding: 0 24rpx;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
 }
-
+.back-wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.back-icon {
+  font-size: 80rpx;
+  color: #2f3d2f;
+  line-height: 1;
+  transform: scaleX(0.75);
+  transform-origin: left center;
+  padding: 0 8rpx;
+  margin-top: -4rpx;
+}
 .title {
   text-align: center;
-  font-size: 56rpx;
-  font-weight: 800;
-  color: var(--text);
+  font-size: 46rpx;
+  font-weight: 700;
+  color: #1d1d1d;
+}
+.right-spacer {
+  width: 80rpx;
 }
 
-.error-banner {
-  margin: 0 36rpx;
-  padding: 16rpx 20rpx;
-  border-radius: 18rpx;
-  background: rgba(241, 92, 92, 0.12);
-  color: #d14343;
-  font-size: 30rpx;
+/* 顶部两个按钮：并排展开，圆角收一点 */
+.toolbar {
+  display: flex;
+  gap: 16rpx;
+  padding: 18rpx 24rpx 12rpx;
 }
-
-.ghost-btn {
+.pill-btn {
+  flex: 1;                  /* 关键：并排展开 */
+  border: none;
+  border-radius: 22rpx;     /* 不要 9999rpx 那么圆 */
+  padding: 18rpx 22rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  padding: 16rpx 24rpx;
-  border-radius: 999rpx;
-  border: 2rpx solid rgba(75, 116, 255, 0.22);
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 4rpx 10rpx rgba(15, 15, 40, 0.08);
+  box-shadow: 0 8rpx 18rpx rgba(0, 0, 0, 0.04);
 }
-
-.ghost-btn.right {
-  justify-self: end;
+.pill-btn.primary {
+  background: #839f90;
+  color: #fff;
 }
-
-.ghost-icon {
-  width: 36rpx;
-  height: 36rpx;
+.pill-btn.ghost {
+  background: #fff;
+  color: #1d1d1d;
+  border: 1px solid rgba(131, 159, 144, 0.25);
 }
-
-.ghost-text {
-  font-size: 34rpx;
+.pill-icon {
+  width: 28rpx;
+  height: 28rpx;
+}
+.pill-text {
+  font-size: 30rpx;
   font-weight: 600;
-  color: var(--accent);
 }
 
-.schedule {
-  padding: 0 36rpx 10rpx;
+/* 错误提示 */
+.error-banner {
+  margin: 0 24rpx 12rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+  background: rgba(241, 92, 92, 0.12);
+  color: #d14343;
+  font-size: 28rpx;
 }
 
-.schedule-title {
-  font-size: 34rpx;
+/* 提醒卡片 */
+.section-card {
+  background: #fff;
+  border-radius: 20rpx;
+  margin: 0 24rpx 16rpx;
+  padding: 20rpx 20rpx 10rpx;
+  box-shadow: 0 10rpx 22rpx rgba(0, 0, 0, 0.06);
+}
+.section-title {
+  font-size: 34rpx; /* bigger */
   font-weight: 700;
-  color: var(--text);
-  margin-bottom: 16rpx;
+  color: #1d1d1d;
+  margin-bottom: 12rpx;
 }
-
 .schedule-list {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 14rpx;
 }
-
 .schedule-item {
-  padding: 24rpx;
-  background: var(--card);
-  border-radius: 26rpx;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
+  background: #f7faf8;
+  border-radius: 16rpx;
+  padding: 14rpx 14rpx 12rpx;
 }
-
 .schedule-name {
-  font-size: 34rpx;
+  font-size: 30rpx;
   font-weight: 700;
-  color: var(--text);
+  color: #1d1d1d;
 }
-
 .schedule-time {
   font-size: 28rpx;
-  color: var(--muted);
+  color: #6b7280;
 }
-
 .schedule-meta {
   font-size: 26rpx;
-  color: var(--muted);
+  color: #9ca3af;
 }
 
+/* 活动列表 */
 .activities {
   flex: 1;
-  padding: 24rpx 36rpx 120rpx;
+  padding: 0 24rpx 120rpx;
   box-sizing: border-box;
 }
-
 .activity-card {
-  background: var(--card);
-  border-radius: 32rpx;
-  padding: 32rpx;
-  margin-bottom: 32rpx;
-  box-shadow: var(--shadow);
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 22rpx 20rpx 20rpx;
+  margin-top: 18rpx;
+  box-shadow: 0 10rpx 22rpx rgba(0, 0, 0, 0.03);
 }
-
 .card-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 12rpx;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
 }
-
 .card-title {
-  font-size: 44rpx;
-  font-weight: 800;
-  color: var(--text);
+  font-size: 38rpx; /* bigger */
+  font-weight: 700;
+  color: #1d1d1d;
 }
-
 .card-creator {
   font-size: 28rpx;
-  color: var(--muted);
+  color: #6b7280;
 }
-
 .card-description {
-  font-size: 32rpx;
-  color: var(--text);
+  font-size: 30rpx; /* bigger */
+  color: #374151;
   line-height: 1.5;
-  margin-bottom: 18rpx;
+  margin-bottom: 12rpx;
 }
-
 .card-info {
   display: flex;
   flex-direction: column;
   gap: 8rpx;
-  font-size: 30rpx;
-  color: var(--text);
+  font-size: 28rpx; /* bigger */
+  color: #1f2937;
 }
-
 .info-row {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  gap: 6rpx;
 }
 
+/* 状态 tag */
 .status-tags {
   display: flex;
-  gap: 16rpx;
-  margin: 16rpx 0;
+  gap: 12rpx;
+  margin: 14rpx 0 10rpx;
 }
-
 .tag {
-  padding: 6rpx 18rpx;
+  padding: 6rpx 14rpx;
   border-radius: 999rpx;
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: 600;
 }
-
 .tag-safe {
-  background: rgba(63, 182, 139, 0.15);
-  color: #2f8f67;
+  background: rgba(131, 159, 144, 0.28);
+  color: #2f3d2f;
 }
-
 .tag-pending {
   background: rgba(244, 162, 89, 0.18);
   color: #b36524;
 }
-
 .tag-muted {
-  background: rgba(127, 136, 148, 0.16);
+  background: rgba(107, 114, 128, 0.12);
   color: #6b7280;
 }
 
+/* 主按钮：圆角缩小一点 */
 .primary-btn {
   width: 100%;
-  margin-top: 12rpx;
-  padding: 24rpx 0;
-  border-radius: 20rpx;
-  font-size: 36rpx;
-  font-weight: 700;
+  margin-top: 14rpx;
+  height: 90rpx;
+  border-radius: 22rpx;
+  background: #839f90;
   color: #fff;
-  background: linear-gradient(135deg, #4b74ff, #6a99ff);
-  box-shadow: 0 16rpx 26rpx rgba(75, 116, 255, 0.22);
-}
-
-.primary-btn.disabled {
-  opacity: 0.6;
-  box-shadow: none;
-}
-
-.empty {
-  margin-top: 80rpx;
-  text-align: center;
-  font-size: 32rpx;
-  color: var(--muted);
-}
-
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(12, 16, 40, 0.52);
+  font-weight: 700;
+  font-size: 30rpx;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40rpx;
-  z-index: 20;
+  box-shadow: 0 12rpx 22rpx rgba(0, 0, 0, 0.06);
+}
+.primary-btn.disabled {
+  background: rgba(131, 159, 144, 0.5);
+  box-shadow: none;
 }
 
+/* 空态 */
+.empty {
+  text-align: center;
+  padding: 70rpx 0 140rpx;
+  color: #9ca3af;
+  font-size: 28rpx;
+}
+
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 24rpx;
+  z-index: 50;
+}
 .modal {
   width: 100%;
   max-width: 720rpx;
-  background: var(--card);
-  border-radius: 36rpx;
-  padding: 40rpx;
-  box-shadow: 0 24rpx 44rpx rgba(15, 15, 40, 0.18);
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx 24rpx 26rpx;
+  box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.12);
 }
-
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
 .modal-title {
-  font-size: 44rpx;
-  font-weight: 800;
-  margin-bottom: 24rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1d1d1d;
 }
-
+.modal-close {
+  font-size: 50rpx;
+  line-height: 1;
+  color: #6b7280;
+}
 .form-field {
   display: flex;
   flex-direction: column;
-  margin-bottom: 24rpx;
+  margin-bottom: 18rpx;
 }
-
-.form-field.columns {
+.form-field.row {
   flex-direction: row;
-  gap: 24rpx;
+  gap: 14rpx;
 }
-
-.form-field.columns view {
+.form-field .col {
   flex: 1;
 }
-
 .label {
-  font-size: 28rpx;
-  color: var(--muted);
-  margin-bottom: 12rpx;
+  font-size: 26rpx;
+  color: #4b5563;
+  margin-bottom: 8rpx;
 }
-
-.input,
-.textarea {
-  background: #f3f4f8;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  font-size: 32rpx;
-  color: var(--text);
-}
-
-.textarea {
-  min-height: 160rpx;
-}
-
 .input-control {
   width: 100%;
 }
-
-.picker {
-  width: 100%;
-}
-
-.picker-display {
-  background: #f3f4f8;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  font-size: 32rpx;
-  color: var(--text);
-}
-
 :deep(.uni-easyinput__content),
 :deep(.uni-date-editor) {
-  background: #f3f4f8 !important;
-  border-radius: 20rpx;
+  background: #f3f4f6 !important;
+  border-radius: 16rpx !important;
+  border: 1px solid #e5e7eb !important;
   min-height: 80rpx;
   padding: 0 24rpx;
-  border: none;
 }
-
 :deep(.uni-easyinput__content-input),
 :deep(.uni-date-editor input) {
-  font-size: 32rpx;
-  color: var(--text);
+  font-size: 30rpx;
+  color: #1f2937;
 }
-
-:deep(.uni-easyinput__placeholder-class),
-:deep(.uni-date-editor .uni-input-placeholder) {
-  color: var(--muted) !important;
+.textarea {
+  background: #f3f4f6;
+  border-radius: 16rpx;
+  min-height: 140rpx;
+  padding: 16rpx 18rpx;
+  font-size: 28rpx;
+  border: 1px solid #e5e7eb;
 }
-
+.picker-display {
+  background: #f3f4f6;
+  border-radius: 16rpx;
+  min-height: 80rpx;
+  padding: 0 20rpx;
+  display: flex;
+  align-items: center;
+  font-size: 30rpx;
+  color: #1f2937;
+}
 .error {
   color: #d14343;
-  font-size: 28rpx;
-  margin-bottom: 20rpx;
+  font-size: 26rpx;
+  margin-bottom: 16rpx;
 }
-
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 18rpx;
+  gap: 12rpx;
 }
 </style>

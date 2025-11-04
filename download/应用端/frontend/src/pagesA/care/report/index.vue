@@ -14,30 +14,24 @@
       <!-- Health data -->
       <view class="card">
         <view class="card-head">
-          <text class="card-title">Health Data</text>
+          <text class="card-title">Your Health Risk Level</text>
           <view class="btn primary small" @click="updateQuestionnaire">Update</view>
         </view>
 
-        <!-- Key indicators -->
-        <view class="grid grid-cols-2 gap-4">
-          <view
-              v-for="ind in indicators"
-              :key="ind.title"
-              class="ind-card"
-          >
-            <view class="ind-head">
-              <view class="ind-icon" :style="{ backgroundColor: ind.color + '20' }">
-                <text class="ind-emoji">{{ ind.emoji }}</text>
-              </view>
-            </view>
-
-            <text class="ind-title">{{ ind.title }}</text>
-            <text class="ind-desc">{{ ind.description }}</text>
-
-            <view class="ind-bar">
-              <view class="ind-fill" :style="{ width: ind.progress + '%', background: ind.color }"></view>
-            </view>
+        <!-- === 新：风险等级单卡片（替代原4个指标卡片） === -->
+        <view v-if="riskLoading" class="empty">
+          <text>Loading...</text>
+        </view>
+        <view v-else class="risk-card">
+          <view class="risk-icon" :style="{ backgroundColor: riskBg }">
+            <text class="risk-emoji">{{ riskEmoji }}</text>
           </view>
+
+          <!--          <view class="risk-info">-->
+          <!--            <text class="risk-title">Your Health Risk Level</text>-->
+          <!--            <text class="risk-level" :class="riskClass">{{ riskText }}</text>-->
+          <!--            <text class="risk-desc">{{ riskDesc }}</text> -->
+          <!--          </view>-->
         </view>
       </view>
 
@@ -106,8 +100,9 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance } from 'vue'
+import { ref, computed, getCurrentInstance } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import service from '@/utils/request'          // ✅ 新增：与 Care 页一致的取数方式
 
 const { proxy } = getCurrentInstance()
 
@@ -125,23 +120,115 @@ const systemSettings = ref({
 const newContact = ref({ name: '', phone_number: '' })
 const addContactPopup = ref(null)
 
-/** Key indicators */
-const indicators = [
-  { title: 'Sleep Quality', description: 'Slept 8 hours last night', progress: 100, color: '#A3B18A', emoji: '🌙' },
-  { title: 'Healthy Diet', description: 'Water intake goal achieved today', progress: 85, color: '#DDB892', emoji: '🍎' },
-  { title: 'Active Lifestyle', description: 'Daily step goal completed', progress: 92, color: '#7E8C77', emoji: '🏃‍♂️' },
-  { title: 'Social Interaction', description: '5 interactions today', progress: 75, color: '#588157', emoji: '💬' },
-]
+/** ===== 新增：风险相关状态 ===== */
+const riskLoading = ref(true)
+const riskLevel = ref('low_risk')
+
+/** 风险 -> UI 映射 */
+const RISK_MAP = {
+  low_risk: {
+    emoji: '😀',
+    text: 'Low Risk',
+    desc: '总体状况良好，继续保持当前生活方式。',
+    class: 'risk-low',
+    bg: 'rgba(46, 125, 50, .10)'
+  },
+  moderate_risk: {
+    emoji: '😐',
+    text: 'Moderate Risk',
+    desc: '存在一些风险点，建议适度调整饮食与作息。',
+    class: 'risk-mod',
+    bg: 'rgba(153, 115, 0, .10)'
+  },
+  high_risk: {
+    emoji: '😟',
+    text: 'High Risk',
+    desc: '风险较高，请关注睡眠、运动与饮水等关键指标。',
+    class: 'risk-high',
+    bg: 'rgba(198, 40, 40, .10)'
+  },
+  extremly_high_risk: {
+    emoji: '😱',
+    text: 'Extremely High Risk',
+    desc: '极高风险，建议尽快咨询医生或专业人员。',
+    class: 'risk-xhigh',
+    bg: 'rgba(183, 28, 28, .10)'
+  }
+}
+
+const ui = computed(() => RISK_MAP[riskLevel.value] || RISK_MAP.low_risk)
+const riskEmoji = computed(() => ui.value.emoji)
+const riskText  = computed(() => ui.value.text)
+const riskDesc  = computed(() => ui.value.desc)
+const riskClass = computed(() => ui.value.class)
+const riskBg    = computed(() => ui.value.bg)
 
 /** Fetch user data */
 const fetchUserData = async () => {
   const userRes = await proxy.$cf.login.getLoginUser()
   if (userRes.success && userRes.data) {
     userInfo.value = userRes.data
-    await fetchEmergencyContacts(userRes.data.user_info_id)
-    await fetchSystemSettings(userRes.data.user_info_id)
+    const uid = userRes.data.user_info_id
+    await fetchEmergencyContacts(uid)
+    await fetchSystemSettings(uid)
+    await fetchRiskLevel(uid)   // ✅ 改为走 /care/risk
+  } else {
+    riskLoading.value = false
   }
 }
+
+/** ✅ 用 service.get('/care/risk') 获取最新风险等级 */
+// const fetchRiskLevel = async (userId) => {
+//   try {
+//     // ✅ 和 Care 页一致，走封装的 service，相对路径 '/care/risk'
+//     const r = await service.get('/care/risk', { params: { userId } })
+//
+//     // 兼容返回结构：直接对象 / R 包装
+//     const lvl = r?.risk_level ?? r?.data?.risk_level ?? r?.data?.data?.risk_level
+//     riskLevel.value = (lvl || 'low_risk').toString().trim()
+//   } catch (e) {
+//     console.warn('fetchRiskLevel error:', e?.response?.status, e?.response?.data || e)
+//     riskLevel.value = 'low_risk'
+//   } finally {
+//     riskLoading.value = false
+//   }
+// }
+const fetchRiskLevel = async (userId) => {
+  try {
+    const r = await service.get('/care/risk', { params: { userId } })
+
+    // 1) 取原始返回
+    const raw =
+        r?.risk_level ??
+        r?.data?.risk_level ??
+        r?.data?.data?.risk_level ??
+        'low_risk'
+
+    // 2) 规范化：去两端空白、转小写、空格/连字符 => 下划线
+    let key = String(raw).trim().toLowerCase()
+        .replace(/[\s-]+/g, '_')
+
+    // 3) 同义/拼写兼容（比如 extremely -> extremly，high risk 写法等）
+    const alias = {
+      'low risk': 'low_risk',
+      'moderate risk': 'moderate_risk',
+      'high risk': 'high_risk',
+      'extremely_high_risk': 'extremly_high_risk', // 若后端返回 extremely
+      'extremely risk': 'extremly_high_risk',
+      'extremely_high': 'extremly_high_risk'
+    }
+    if (alias[key]) key = alias[key]
+
+    // 4) 不在映射表则回退
+    riskLevel.value = (key in RISK_MAP) ? key : 'low_risk'
+  } catch (e) {
+    console.warn('fetchRiskLevel error:', e?.response?.status, e?.response?.data || e)
+    riskLevel.value = 'low_risk'
+  } finally {
+    riskLoading.value = false
+  }
+}
+
 
 const fetchEmergencyContacts = async (userId) => {
   const res = await proxy.$cf.table.list({
@@ -248,7 +335,7 @@ onLoad(() => { fetchUserData() })
 .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
 .card-title{ font-size:20px; font-weight:800; color:var(--ink); }
 
-/* —— New: Indicator cards —— */
+/* —— 旧指标卡样式（保留，不再使用） —— */
 .ind-card{
   background: rgba(255,255,255,.8);
   backdrop-filter: blur(6px);
@@ -263,6 +350,49 @@ onLoad(() => { fetchUserData() })
 .ind-desc{ display:block; color:var(--muted); font-size: 12px; margin-bottom:10px; }
 .ind-bar{ width:100%; height:8px; background:#e5e7eb; border-radius:9999px; overflow:hidden; }
 .ind-fill{ height:100%; border-radius:9999px; transition: width .6s ease; }
+
+/* === 新：风险卡片样式 === */
+/*.risk-card{ display:flex; align-items:center; gap:14px; }
+.risk-icon{
+  width:56px; height:56px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+}
+.risk-emoji{ font-size:32px; line-height:1; }*/
+
+/* === 放大表情并让卡片居中显示 === */
+.risk-card {
+  display: flex;
+  align-items: center;      /* 水平居中 */
+  justify-content: center;  /* 垂直居中 */
+  min-height: 180px;        /* 卡片高度（可根据整体风格调整） */
+  padding: 40px 0;
+}
+
+.risk-icon {
+  width: 160px;             /* 放大背景容器 */
+  height: 160px;
+  border-radius: 40px;      /* 圆角更柔和 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08); /* 增强视觉层次，可选 */
+}
+
+.risk-emoji {
+  font-size: 120px;         /* 放大表情 */
+  line-height: 1;
+}
+
+.risk-info{ display:flex; flex-direction:column; }
+.risk-title{ font-size:14px; color:var(--muted); }
+.risk-level{ font-size:18px; font-weight:800; margin-top:2px; }
+.risk-desc{ font-size:12px; color:#6b7280; margin-top:4px; }
+
+/* 颜色语义 */
+.risk-low{ color:#2E7D32; }
+.risk-mod{ color:#997300; }
+.risk-high{ color:#C62828; }
+.risk-xhigh{ color:#B71C1C; }
 
 /* Empty state */
 .empty{ padding:32px 0; text-align:center; color:#9ca3af; }

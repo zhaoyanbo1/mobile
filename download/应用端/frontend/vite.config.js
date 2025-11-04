@@ -51,13 +51,14 @@ export default defineConfig(({ command, mode }) => {
                 // Windows 可保持默认；如果你在 WSL/网络盘，必要时：
                 // usePolling: true, interval: 1000
             },
-            proxy: {
-                [env.VITE_APP_BASE_API]: {
-                    target: env.VITE_APP_SERVICE_API,
-                    changeOrigin: true,
-                    //rewrite: (path) => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), ''),
-                },
-            }
+            // proxy: {
+            //     [env.VITE_APP_BASE_API]: {
+            //         target: env.VITE_APP_SERVICE_API,
+            //         changeOrigin: true,
+            //         //rewrite: (path) => path.replace(new RegExp('^' + env.VITE_APP_BASE_API), ''),
+            //     },
+            // }
+            proxy: {}
         },
         resolve: {
             alias: {

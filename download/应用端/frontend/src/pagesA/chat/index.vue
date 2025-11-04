@@ -2,7 +2,13 @@
   <base-layout>
     <!-- 顶部栏 -->
     <view class="topbar">
-      <image :src="icons.menu" mode="widthFix" class="icon" />
+      <!-- ✅ 点击这里退出并回登录页 -->
+      <image
+          :src="icons.menu"
+          mode="widthFix"
+          class="icon"
+          @click="logoutAndGoLogin"
+      />
       <text class="title">Social</text>
       <view class="right-spacer"></view>
     </view>
@@ -75,10 +81,17 @@ import menuIcon from '@/static/gg_menu-left-alt.svg'
 import api from '@/api/index.js'
 import activitiesApi from '@/api/page/activities.js'
 import useNotificationStore from '@/api/utils/notificationStore'
+
+const { proxy } = getCurrentInstance()
 const icons = { menu: menuIcon }
 
+/**
+ * ⚠️ 这里是你登录页的路径，按你的项目改
+ * 我先写成 /pages/login/index
+ */
+const LOGIN_PAGE = '/pages/login/index'
+
 const navTo = (url: string) => {
-  const proxy = getCurrentInstance()?.proxy
   if (proxy?.$cf?.navigate?.to) proxy.$cf.navigate.to({ url, type: 'page', mode: 'navigate' })
   else uni.navigateTo({ url })
 }
@@ -87,6 +100,7 @@ const goAIChat = () => navTo('/pagesA/chat/ai_chat/index')
 const goFriendChat = () => navTo('/pagesA/chat/friend_chat/FriendList')
 const goLinkedTasks = () => navTo('/pagesA/activities/index')
 
+/* ===== 徽标 ===== */
 const notifications = useNotificationStore()
 const friendBadgeCount = notifications.friendUnreadTotal
 const activityBadgeCount = notifications.activityPendingCount
@@ -99,9 +113,10 @@ const formatBadge = (count: number) => {
 const friendBadgeDisplay = computed(() => formatBadge(friendBadgeCount.value))
 const activityBadgeDisplay = computed(() => formatBadge(activityBadgeCount.value))
 
+/* ===== 刷新红点 ===== */
 async function refreshFriendNotifications () {
   try {
-    const res = await api.page.friends.getMyFriendList()
+    const res = await api.friends.getMyFriendList()
     const list = Array.isArray(res) ? res : []
     notifications.applyFriendList(list)
   } catch (error) {
@@ -117,7 +132,11 @@ async function refreshActivityNotifications () {
     const activities = Array.isArray(response?.data?.activities) ? response.data.activities : []
     const pendingTotal = activities
         .filter((activity: any) => activity?.host)
-        .reduce((sum: number, activity: any) => sum + (Array.isArray(activity?.pendingApplicants) ? activity.pendingApplicants.length : 0), 0)
+        .reduce(
+            (sum: number, activity: any) =>
+                sum + (Array.isArray(activity?.pendingApplicants) ? activity.pendingApplicants.length : 0),
+            0
+        )
     notifications.setActivityPendingCount(pendingTotal)
   } catch (error) {
     console.warn('Failed to refresh activity notifications', error)
@@ -127,6 +146,34 @@ async function refreshActivityNotifications () {
 
 async function refreshBadges () {
   await Promise.all([refreshFriendNotifications(), refreshActivityNotifications()])
+}
+
+/* ===== 退出登录并回登录页 ===== */
+async function logoutAndGoLogin () {
+  try {
+    // 1. 尝试调后端/框架的 logout（如果有的话就能把服务端会话也清了）
+    await proxy?.$cf?.login?.logout?.()
+  } catch (e) {
+    // 没有也没关系，本地清就行
+  }
+
+  // 2. 把本地的登录相关都清掉，跟你登录成功时存的 key 对应
+  uni.removeStorageSync('token')
+  uni.removeStorageSync('h5_token')
+  uni.removeStorageSync('me')
+  uni.removeStorageSync('user')
+  uni.removeStorageSync('uid')
+
+  // 有些项目会把当前登录用户写到全局变量里，这里也清一下，防止“自动填回去”
+  try {
+    await proxy?.$cf?.globalVariable?.write?.({ variableName: 'h5_token', value: '' })
+  } catch (e) {}
+  try {
+    await proxy?.$cf?.globalVariable?.write?.({ variableName: 'currentUser', value: '' })
+  } catch (e) {}
+
+  // 3. 回到登录页，用 reLaunch 防止用户点返回又回到 Social
+  uni.reLaunch({ url: LOGIN_PAGE })
 }
 
 onShow(() => {
@@ -193,18 +240,14 @@ onShow(() => {
   flex-direction: column;
   gap: 28rpx;
 }
-
-/* 外层容器（撑满屏幕，但内部卡片留出间距） */
 .button-wrapper {
-  padding: 0 30rpx; /* ✅ 两边留间距，保持圆角 */
+  padding: 0 30rpx;
 }
-
-/* 按钮卡片样式 */
 .feature-btn {
   width: 100%;
   border: none;
   background: #fff;
-  border-radius: 1.4rem; /* ✅ 保留圆角 */
+  border-radius: 1.4rem;
   padding: 1rem 1.4rem;
   display: flex;
   align-items: center;
@@ -213,7 +256,6 @@ onShow(() => {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
   transition: all 0.25s ease;
 }
-
 .badge-indicator {
   position: absolute;
   top: 16rpx;
@@ -235,8 +277,6 @@ onShow(() => {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
-
-/* 左侧 icon 圆形 */
 .icon-circle {
   width: 3rem;
   height: 3rem;
@@ -246,8 +286,6 @@ onShow(() => {
   justify-content: center;
   background: linear-gradient(145deg, #a3b18a, #7e8c77);
 }
-
-/* 文本样式 */
 .card-title {
   display: block;
   font-size: 34rpx;

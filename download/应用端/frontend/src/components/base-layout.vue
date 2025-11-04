@@ -12,17 +12,17 @@
     <base-tabBar v-if="isTab" :tabList="tabList" />
 
     <!-- Floating entry to AI Coach -->
-<!--    <view-->
-<!--        v-if="showCoachButton"-->
-<!--        class="ai-coach-button"-->
-<!--        :style="coachButtonStyle"-->
-<!--        role="button"-->
-<!--        tabindex="0"-->
-<!--        @click="goAiChat"-->
-<!--        @keyup.enter="goAiChat"-->
-<!--    >-->
-<!--      ask AI Coach-->
-<!--    </view>-->
+    <view
+        v-if="showCoachButton"
+        class="ai-coach-button"
+        :style="coachButtonStyle"
+        role="button"
+        tabindex="0"
+        @click="goAiChat"
+        @keyup.enter="goAiChat"
+    >
+      ask AI Coach
+    </view>
   </view>
 </template>
 
@@ -67,11 +67,17 @@ const goAiChat = () => {
 }
 
 const coachButtonStyle = computed(() => {
-  const bottomOffset = isTab.value ? 160 : 96
+  const bottomOffset = isTab.value ? 120 : 48
   return {
-    bottom: `calc(${bottomOffset}rpx + env(safe-area-inset-bottom))`
+    position: 'fixed',
+    left: '24rpx',
+    bottom: `calc(${bottomOffset}rpx + env(safe-area-inset-bottom, 0px))`,
+    top: 'auto',
+    right: 'auto',
+    zIndex: 999,
   }
 })
+
 
 // Run on initial load, when page becomes visible again, and after mount
 onLoad(checkIsTab)

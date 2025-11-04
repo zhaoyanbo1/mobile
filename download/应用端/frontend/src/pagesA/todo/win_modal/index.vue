@@ -30,12 +30,13 @@ import { ref, getCurrentInstance } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import defaultMedalIcon from '@/static/medal/give_me_five.svg'
 
+
 const { proxy } = getCurrentInstance()
 
 /** Config */
-const API_BASE = ''
+const API_BASE = import.meta.env.VITE_APP_SERVICE_API
 const COLLECT_URL = '/api/user-medals'
-const DEFAULT_MEDAL_ID = 2              // Matches backend
+const DEFAULT_MEDAL_ID = 1000 + day;            // Matches backend
 const DEFAULT_MEDAL_NAME = 'Daily Five' // Default name
 const DEFAULT_ICON = defaultMedalIcon
 const MEDAL_LIST_PAGE = '/pagesA/todo/show_modal/index'

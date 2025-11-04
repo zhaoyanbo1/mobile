@@ -1,8 +1,9 @@
 <template>
   <base-layout>
     <!-- Theme wrapper -->
-    <view class="theme-health min-h-screen flex flex-col items-center justify-center bg-[linear-gradient(180deg,_#FAFAF8_0%,_#FFFFFF_60%)] p-6">
-
+    <view
+        class="theme-health min-h-screen flex flex-col items-center justify-center bg-[linear-gradient(180deg,_#FAFAF8_0%,_#FFFFFF_60%)] p-6"
+    >
       <!-- App Logo / Title -->
       <view class="mb-10 flex flex-col items-center">
         <text class="text-[28px] leading-tight font-extrabold text-neutral-900 tracking-[0.2px]">
@@ -14,7 +15,9 @@
       </view>
 
       <!-- Login Card -->
-      <view class="login-shell w-full max-w-[420px] bg-white rounded-[20px] shadow-soft p-6 mb-8 border border-[var(--card-border)]">
+      <view
+          class="login-shell w-full max-w-[420px] bg-white rounded-[20px] shadow-soft p-6 mb-8 border border-[var(--card-border)]"
+      >
         <base-login
             login_type="passwd"
             show_title=""
@@ -41,7 +44,9 @@
 
       <!-- Sign-up Modal -->
       <uni-popup ref="registerPopup" type="center" :mask-click="true">
-        <view class="modal-card bg-white rounded-[18px] w-[92vw] max-w-[420px] shadow-soft border border-[var(--card-border)]">
+        <view
+            class="modal-card bg-white rounded-[18px] w-[92vw] max-w-[420px] shadow-soft border border-[var(--card-border)]"
+        >
           <view class="px-6 pt-5 pb-3 border-b border-[var(--card-border)]">
             <text class="block text-[20px] font-extrabold text-neutral-900">Create account</text>
           </view>
@@ -49,15 +54,27 @@
           <view class="modal-scroll px-6 py-4">
             <uni-forms :modelValue="registerForm" label-position="top" class="form-styled">
               <uni-forms-item required label="Phone Number" name="phone_number">
-                <uni-easyinput type="text" v-model="registerForm.phone_number" placeholder="Enter phone number" />
+                <uni-easyinput
+                    type="text"
+                    v-model="registerForm.phone_number"
+                    placeholder="Enter phone number"
+                />
               </uni-forms-item>
 
               <uni-forms-item required label="Username" name="username">
-                <uni-easyinput type="text" v-model="registerForm.username" placeholder="Enter username" />
+                <uni-easyinput
+                    type="text"
+                    v-model="registerForm.username"
+                    placeholder="Enter username"
+                />
               </uni-forms-item>
 
               <uni-forms-item required label="Password" name="password">
-                <uni-easyinput type="password" v-model="registerForm.password" placeholder="Enter password" />
+                <uni-easyinput
+                    type="password"
+                    v-model="registerForm.password"
+                    placeholder="Enter password"
+                />
               </uni-forms-item>
 
               <view class="grid grid-cols-1 gap-3 mt-1">
@@ -80,7 +97,11 @@
                 </uni-forms-item>
 
                 <uni-forms-item label="Emergency Contact" name="emergency_contact">
-                  <uni-easyinput type="text" v-model="registerForm.emergency_contact" placeholder="Name / phone (optional)" />
+                  <uni-easyinput
+                      type="text"
+                      v-model="registerForm.emergency_contact"
+                      placeholder="Name / phone (optional)"
+                  />
                 </uni-forms-item>
               </view>
 
@@ -115,6 +136,8 @@
 
 <script setup>
 import { ref, getCurrentInstance } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+
 const { proxy } = getCurrentInstance()
 
 const todayStr = ref(new Date().toISOString().slice(0, 10))
@@ -140,52 +163,111 @@ const registerForm = ref({
 const registerPopup = ref(null)
 const showRegisterPopup = () => registerPopup.value?.open()
 
-/* ✅ 登录成功逻辑：保存当前用户信息 */
+/** 把所有可能的登录痕迹清掉 */
+async function clearResidualAuth () {
+  try {
+    uni.removeStorageSync('token')
+    uni.removeStorageSync('me')
+    uni.removeStorageSync('user')
+    uni.removeStorageSync('uid')
+    uni.removeStorageSync('h5_token')
+  } catch (e) {}
+
+  try {
+    await proxy?.$cf?.globalVariable?.write?.({ variableName: 'h5_token', value: '' })
+  } catch (e) {}
+  try {
+    await proxy?.$cf?.globalVariable?.write?.({ variableName: 'currentUser', value: '' })
+  } catch (e) {}
+}
+
+onShow(async () => {
+  // 回到登录页先清一次
+  await clearResidualAuth()
+})
+
+/* ✅ 登录成功逻辑（放宽判断）：能拿到用户就算成功 */
 const handleLoginSuccess = async (payload) => {
+  // 1. 尽量多渠道拿 token
   let token =
       payload?.token ||
       payload?.data?.token ||
       payload?.accessToken ||
       payload?.data?.accessToken ||
       ''
+
+  // 有些组件登录成功后直接写本地，不在 payload 里
+  if (!token) {
+    const localToken = uni.getStorageSync('token') || uni.getStorageSync('h5_token')
+    if (localToken) token = localToken
+  }
+  if (!token) {
+    // 再从全局变量兜底
+    try {
+      const t = await proxy?.$cf?.globalVariable?.read?.({ variableName: 'h5_token' })
+      token = t?.data || ''
+    } catch (e) {}
+  }
+
+  // 2. 尽量拿用户信息
   let me =
       payload?.user ||
       payload?.data?.user ||
       null
 
-  // 兜底获取 token / me
-  if (!token) {
-    try {
-      const t = await proxy.$cf.globalVariable.read({ variableName: 'h5_token' })
-      token = t?.data || ''
-    } catch (e) {}
-  }
+  // 不在 payload 里，就调一次后端的“我是谁”
   if (!me) {
     try {
-      const resp = await proxy.$cf.login.getLoginUser()
-      me = resp?.data || null
+      const resp = await proxy?.$cf?.login?.getLoginUser?.()
+      if (resp?.success) {
+        me = resp.data
+      }
     } catch (e) {}
   }
 
-  // 统一提取 uid
+  // 3. 把 uid 抽出来
   const uid = me?.user_info_id ?? me?.id ?? me?.userId ?? me?.uid ?? null
 
-  // ✅ 保存本地信息（排行榜页依赖这里）
-  if (token) uni.setStorageSync('token', token)
-  if (me) {
-    uni.setStorageSync('me', me)
-    uni.setStorageSync('user', {
-      userId: uid,
-      username: me.username ?? me.name ?? 'Anonymous',
-      avatarUrl:
-          me.avatarUrl ??
-          me.avatar ??
-          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop'
+  // 🚩 改这里：只要拿到了“用户(id)”就算登录成功，
+  // token 没拿到也别直接提示“invalid”，先把能存的都存起来
+  if (!uid) {
+    // 真是没拿到用户，这才当作失败
+    await clearResidualAuth()
+    proxy?.$cf?.toast?.({
+      message: 'Login info invalid, please login again.',
+      level: 'error'
     })
+    return
   }
-  if (uid != null) uni.setStorageSync('uid', String(uid))
 
-  proxy.$cf.toast({ message: 'Login successful', level: 'success', duration: 1200 })
+  // 4. 能拿到就往本地里写
+  if (token) {
+    uni.setStorageSync('token', token)
+    // 顺手写回全局，方便其他页面用
+    try {
+      await proxy?.$cf?.globalVariable?.write?.({ variableName: 'h5_token', value: token })
+    } catch (e) {}
+  }
+
+  uni.setStorageSync('me', me)
+  uni.setStorageSync('user', {
+    userId: uid,
+    username: me.username ?? me.name ?? 'Anonymous',
+    avatarUrl:
+        me.avatarUrl ??
+        me.avatar ??
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop'
+  })
+  uni.setStorageSync('uid', String(uid))
+
+  // 也把 currentUser 写掉，避免你后面页面读不到
+  try {
+    await proxy?.$cf?.globalVariable?.write?.({ variableName: 'currentUser', value: me })
+  } catch (e) {}
+
+  proxy?.$cf?.toast?.({ message: 'Login successful', level: 'success', duration: 1200 })
+
+  // 5. 真正跳转
   setTimeout(() => {
     proxy.$cf.navigate.to({ url: '/pages/chat/index', type: 'page' })
   }, 1200)
@@ -193,10 +275,13 @@ const handleLoginSuccess = async (payload) => {
 
 /* 登录失败 */
 const handleLoginFail = () => {
-  proxy.$cf.toast({ message: 'Login failed. Please check your credentials.', level: 'error' })
+  proxy?.$cf?.toast?.({
+    message: 'Login failed. Please check your credentials.',
+    level: 'error'
+  })
 }
 
-/* 注册并自动登录 */
+/* 注册并自动登录（保持你原来的逻辑） */
 const handleRegister = async () => {
   if (!agree.value) {
     proxy.$cf.toast({ message: 'Please agree to Terms & Privacy first.', level: 'error' })
@@ -251,6 +336,7 @@ const handleRegister = async () => {
   }
 }
 </script>
+
 
 <style scoped>
 .theme-health{

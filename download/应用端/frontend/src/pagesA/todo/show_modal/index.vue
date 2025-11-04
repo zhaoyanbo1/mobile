@@ -46,7 +46,7 @@ import medalFallback from '@/static/medal/give_me_five.svg'
 
 const { proxy } = getCurrentInstance()
 
-const API_BASE = ''
+const API_BASE = import.meta.env.VITE_APP_SERVICE_API
 const QUERY_URL = '/api/user-medals'
 
 const medals  = ref([])

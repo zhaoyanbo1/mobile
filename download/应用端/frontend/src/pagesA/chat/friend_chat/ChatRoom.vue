@@ -1,11 +1,15 @@
 <template>
   <view class="chat-page">
-    <!-- 顶部标题（对方昵称） -->
-    <view class="chat-header">
-      <text class="title">{{ peerName || 'chat with my friend' }}</text>
+    <!-- top bar -->
+    <view class="topbar">
+      <view class="back-wrap" @click="goBack">
+        <text class="back-icon"><</text>
+      </view>
+      <text class="title">{{ peerName || 'Chat with my friend' }}</text>
+      <view class="right-spacer"></view>
     </view>
 
-    <!-- 消息列表 -->
+    <!-- messages -->
     <scroll-view
         class="chat-body"
         :scroll-y="true"
@@ -18,61 +22,103 @@
           class="msg-item"
           :class="m.senderId === myId ? 'me' : 'other'"
       >
-        <view class="bubble" :class="bubbleClass(m)">
+        <view
+            class="bubble"
+            :class="[
+            m.senderId === myId ? 'bubble-me' : 'bubble-other',
+            m.contentType === 'ACTIVITY_INVITE' ? 'bubble-card' : ''
+          ]"
+        >
+          <!-- plain text -->
           <template v-if="m.contentType === 'TEXT'">
             {{ m.content }}
           </template>
+
+          <!-- activity invite -->
           <template v-else-if="m.contentType === 'ACTIVITY_INVITE'">
             <view class="invite-card">
-              <text class="invite-title">{{ m.content?.title || '活动邀请' }}</text>
-              <text class="invite-meta" v-if="m.content?.time">时间：{{ m.content.time }}</text>
-              <text class="invite-meta" v-if="m.content?.location">地点：{{ m.content.location }}</text>
-              <view class="invite-meta" v-if="m.content?.maxParticipants">
-                <text>人数：{{ m.content.participantsCount || 0 }}/{{ m.content.maxParticipants }}</text>
+              <text class="invite-title">
+                {{ m.content?.title || 'Activity invitation' }}
+              </text>
+              <text v-if="m.content?.time" class="invite-meta">
+                Time: {{ m.content.time }}
+              </text>
+              <text v-if="m.content?.location" class="invite-meta">
+                Location: {{ m.content.location }}
+              </text>
+              <text v-if="m.content?.maxParticipants" class="invite-meta">
+                Participants: {{ m.content?.participantsCount || 0 }}/{{ m.content.maxParticipants }}
+              </text>
+
+              <view v-if="shouldShowInviteActions(m)" class="invite-actions">
+                <button
+                    class="invite-btn primary"
+                    :disabled="m._processing"
+                    @click="respondToInvite(m, 'ACCEPTED')"
+                >
+                  Accept
+                </button>
+                <button
+                    class="invite-btn secondary"
+                    :disabled="m._processing"
+                    @click="respondToInvite(m, 'DECLINED')"
+                >
+                  Decline
+                </button>
               </view>
-              <view class="invite-actions" v-if="shouldShowInviteActions(m)">
-                <button class="btn-accept" :disabled="m._processing" @click="respondToInvite(m, 'ACCEPTED')">接受</button>
-                <button class="btn-decline" :disabled="m._processing" @click="respondToInvite(m, 'DECLINED')">拒绝</button>
-              </view>
-              <text class="invite-status" v-else>{{ inviteStatusText(m) }}</text>
+              <text v-else class="invite-status">
+                {{ inviteStatusText(m) }}
+              </text>
             </view>
           </template>
+
+          <!-- invite response -->
           <template v-else-if="m.contentType === 'ACTIVITY_INVITE_RESPONSE'">
             <text>{{ inviteResponseText(m) }}</text>
           </template>
+
+          <!-- fallback -->
           <template v-else>
             {{ typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }}
           </template>
         </view>
       </view>
-      <!-- 占位，保证滚动到底 -->
-      <view style="height: 10px;"></view>
+
+      <!-- scroll spacer -->
+      <view style="height: 12vh;"></view>
     </scroll-view>
 
-    <!-- 底部输入栏 -->
-    <view class="input-bar">
-      <button class="btn-activity" @click="toggleActivityPicker">
-        {{ showActivityPicker ? '收起活动' : '发活动' }}
-      </button>
-      <input
-          class="ipt"
-          v-model="inputText"
-          confirm-type="send"
-          @confirm="sendTextMessage"
-          placeholder="输入消息…"
-      />
-      <button class="btn-send" @click="sendTextMessage">发送</button>
+    <!-- bottom composer -->
+    <view class="composer">
+      <view class="composer-surface">
+        <button class="action-button" @click="toggleActivityPicker">
+          {{ showActivityPicker ? 'Hide' : 'Activity' }}
+        </button>
+        <input
+            class="composer-input"
+            v-model="inputText"
+            confirm-type="send"
+            @confirm="sendTextMessage"
+            placeholder="Type a message..."
+        />
+        <button class="send-button" @click="sendTextMessage">
+          Send
+        </button>
+      </view>
     </view>
 
+    <!-- activity picker -->
     <view v-if="showActivityPicker" class="activity-picker">
       <view class="picker-header">
-        <text class="picker-title">我的活动</text>
-        <button class="btn-close" @click="toggleActivityPicker(false)">关闭</button>
+        <text class="picker-title">My activities</text>
+        <button class="picker-close" @click="toggleActivityPicker(false)">Close</button>
       </view>
       <scroll-view class="activity-list" scroll-y>
-        <view v-if="activitiesLoading" class="picker-hint">加载中…</view>
+        <view v-if="activitiesLoading" class="picker-hint">Loading…</view>
         <view v-else-if="activitiesError" class="picker-hint">{{ activitiesError }}</view>
-        <view v-else-if="!myActivities.length" class="picker-hint">暂无活动，前往创建吧</view>
+        <view v-else-if="!myActivities.length" class="picker-hint">
+          No activities yet
+        </view>
         <view
             v-for="activity in myActivities"
             :key="activity.id"
@@ -80,9 +126,11 @@
             @click="sendActivityInvite(activity)"
         >
           <text class="activity-title">{{ activity.title }}</text>
-          <text class="activity-meta" v-if="activity.time">时间：{{ activity.time }}</text>
-          <text class="activity-meta" v-if="activity.location">地点：{{ activity.location }}</text>
-          <text class="activity-meta">人数：{{ activity.participantsCount }}/{{ activity.maxParticipants || '不限' }}</text>
+          <text v-if="activity.time" class="activity-meta">Time: {{ activity.time }}</text>
+          <text v-if="activity.location" class="activity-meta">Location: {{ activity.location }}</text>
+          <text class="activity-meta">
+            Participants: {{ activity.participantsCount }}/{{ activity.maxParticipants || '∞' }}
+          </text>
         </view>
       </scroll-view>
     </view>
@@ -96,11 +144,9 @@ import imApi from '@/api/page/im.js'
 import activitiesApi from '@/api/page/activities.js'
 import useNotificationStore from '@/api/utils/notificationStore'
 
-/** 当前登录用户 ID，用于左右判断 */
 const myId = ref(Number(uni.getStorageSync('uid')) || 0)
 const myName = ref(uni.getStorageSync('username') || '')
 
-/** 页面状态 */
 const peerId = ref(null)
 const peerName = ref('')
 const conversationId = ref(null)
@@ -115,33 +161,28 @@ const activitiesError = ref('')
 
 const notifications = useNotificationStore()
 
-/** 进入页面：拿到 query 参数并加载历史 */
 onLoad(async (q) => {
   if (q?.peerId) peerId.value = Number(q.peerId)
   if (q?.nickname) peerName.value = decodeURIComponent(q.nickname)
 
-  // 如果通过聊天列表跳转时已经带了会话ID，直接用；否则确保会话存在
   if (q?.conversationId) {
     conversationId.value = Number(q.conversationId)
   } else if (peerId.value) {
-    // 确保/创建 1v1 会话（若你的 im.js 方法名不同，请改成你的）
     const r = await imApi.ensureDm(peerId.value)
     conversationId.value = r?.data ?? r ?? null
   }
 
   syncConversationMapping()
-
   await loadMessages()
   scrollToBottom(true)
 })
+
 function parseContent(contentType, rawContent) {
   if (contentType === 'ACTIVITY_INVITE' || contentType === 'ACTIVITY_INVITE_RESPONSE') {
-    if (rawContent && typeof rawContent === 'object') {
-      return { ...rawContent }
-    }
+    if (rawContent && typeof rawContent === 'object') return { ...rawContent }
     try {
       return JSON.parse(rawContent)
-    } catch (err) {
+    } catch (_) {
       return {}
     }
   }
@@ -150,7 +191,6 @@ function parseContent(contentType, rawContent) {
   return String(rawContent)
 }
 
-/** 统一消息结构 */
 function normalizeMsg(m) {
   const type = m.contentType || 'TEXT'
   const raw = m.content ?? ''
@@ -164,67 +204,16 @@ function normalizeMsg(m) {
     contentType: type,
     content: parsed,
     rawContent: typeof raw === 'string' ? raw : JSON.stringify(raw),
-    createdAtEpochMs: m.createdAtEpochMs ?? Date.now()
+    createdAtEpochMs: m.createdAtEpochMs ?? Date.now(),
   }
 }
-/** 根据回复重新整理邀请状态 */
-function recomputeInviteStatuses() {
-  const statusMap = new Map()
-  messages.value.forEach(msg => {
-    if (msg.contentType === 'ACTIVITY_INVITE_RESPONSE') {
-      const data = msg.content || {}
-      if (data.inviteId) {
-        statusMap.set(data.inviteId, (data.status || 'PENDING').toUpperCase())
-      }
-    }
-  })
 
-  messages.value = messages.value.map(msg => {
-    if (msg.contentType !== 'ACTIVITY_INVITE') return msg
-    const invite = msg.content && typeof msg.content === 'object' ? { ...msg.content } : {}
-    const status = statusMap.get(invite.inviteId) || (invite.status || 'PENDING')
-    invite.status = status.toUpperCase()
-    return { ...msg, content: invite }
-  })
-}
-
-/** 滚动到底部 */
-function scrollToBottom(immediate = false) {
-  nextTick(() => {
-    if (immediate) {
-      scrollTop.value = 999999
-    } else {
-      // 触发一点点差值让 scroll-view 动画更自然
-      scrollTop.value = scrollTop.value + 1
-    }
-  })
-}
-
-/** 拉取历史 */
-// async function loadMessages() {
-//   if (!conversationId.value) return
-//   const res = await imApi.getMessages(conversationId.value, null, 20)
-//   // 兼容返回结构：可能是 {data:{list:[]}} 或 {list:[]} 或直接 []
-//   const list = (res?.data?.list ?? res?.list ?? res ?? []).map(normalizeMsg)
-//   list.sort((a, b) => a.createdAtEpochMs - b.createdAtEpochMs)
-//
-//   // messages.value = [...list, ...messages.value]
-//
-//   messages.value = list
-//
-//   scrollToBottom(true)
-// }
-/** 拉取历史 */
 async function loadMessages() {
   if (!conversationId.value) return
   const res = await imApi.getMessages(conversationId.value, null, 20)
   const list = (res?.data?.list ?? res?.list ?? res ?? []).map(normalizeMsg)
-
-  // 排序（旧 → 新）
   messages.value = list
   sortMessages()
-
-  // 加载后自动滚动到底部
   recomputeInviteStatuses()
   scrollToBottom(true)
 
@@ -232,7 +221,34 @@ async function loadMessages() {
   syncConversationMapping()
   markMessagesAsRead(latest?.messageId)
 }
-/** 加载我创建的活动 */
+
+function sortMessages() {
+  messages.value.sort((a, b) => {
+    const ta = a.createdAtEpochMs ?? 0
+    const tb = b.createdAtEpochMs ?? 0
+    if (ta !== tb) return ta - tb
+    return Number(a.messageId ?? 0) - Number(b.messageId ?? 0)
+  })
+}
+
+function scrollToBottom(immediate = false) {
+  nextTick(() => {
+    if (immediate) {
+      scrollTop.value = 999999
+    } else {
+      scrollTop.value = scrollTop.value + 1
+    }
+  })
+}
+
+function toggleActivityPicker(force) {
+  const next = typeof force === 'boolean' ? force : !showActivityPicker.value
+  showActivityPicker.value = next
+  if (next && !myActivities.value.length && !activitiesLoading.value) {
+    loadMyActivities()
+  }
+}
+
 async function loadMyActivities() {
   if (!myId.value) return
   activitiesLoading.value = true
@@ -242,8 +258,7 @@ async function loadMyActivities() {
     const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []
     myActivities.value = list.map(mapActivity)
   } catch (err) {
-    console.warn('加载活动失败', err)
-    activitiesError.value = err?.message || '加载活动失败'
+    activitiesError.value = err?.message || 'Failed to load'
     myActivities.value = []
   } finally {
     activitiesLoading.value = false
@@ -251,73 +266,50 @@ async function loadMyActivities() {
 }
 
 function mapActivity(raw) {
-  if (!raw) return {
-    id: null,
-    title: '',
-    time: '',
-    timeIso: '',
-    location: '',
-    minParticipants: 0,
-    maxParticipants: 0,
-    participantsCount: 0
-  }
+  if (!raw) return {}
   const timeDisplay = raw.activityTime || raw.time || ''
   const timeIso = raw.activityTimeIso || raw.timeIso || ''
   return {
     id: raw.id,
-    title: raw.title || '未命名活动',
+    title: raw.title || 'Untitled activity',
     time: timeDisplay,
     timeIso,
     location: raw.location || '',
     minParticipants: raw.minParticipants ?? 0,
     maxParticipants: raw.maxParticipants ?? 0,
-    participantsCount: raw.participantsCount ?? (raw.participants?.length || 0)
+    participantsCount: raw.participantsCount ?? (raw.participants?.length || 0),
   }
-}
-/** 发送文本消息：先本地追加“临时消息”，成功后用服务端返回覆盖 */
-function toggleActivityPicker(force) {
-  const next = typeof force === 'boolean' ? force : !showActivityPicker.value
-  showActivityPicker.value = next
-  if (next && !myActivities.value.length && !activitiesLoading.value) {
-    loadMyActivities()
-  }
-}
-
-function buildInviteId() {
-  return `invite-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 async function sendTextMessage() {
   const text = inputText.value.trim()
   if (!text) return
   inputText.value = ''
-  try {
-    await sendMessagePayload({ contentType: 'TEXT', content: text })
-  } catch (err) {
-    console.warn('发送消息失败', err)
-  }
+  await sendMessagePayload({ contentType: 'TEXT', content: text })
 }
 
 async function sendMessagePayload({ contentType, content }) {
   if (!conversationId.value && !peerId.value) {
-    uni.showToast({ title: '缺少会话信息', icon: 'none' })
-    throw new Error('missing conversation info')
+    uni.showToast({ title: 'missing conversation', icon: 'none' })
+    throw new Error('missing conversation')
   }
 
-  inputText.value = ''
-
-  // 1) 本地先追加一条临时消息（右侧）
   const tempId = Date.now()
   const now = Date.now()
-  const isStructured = contentType === 'ACTIVITY_INVITE' || contentType === 'ACTIVITY_INVITE_RESPONSE'
+  const isStructured =
+      contentType === 'ACTIVITY_INVITE' || contentType === 'ACTIVITY_INVITE_RESPONSE'
   const rawContent = typeof content === 'string' ? content : JSON.stringify(content ?? {})
-  const localContent = isStructured && content && typeof content === 'object'
-      ? { ...content }
-      : (typeof content === 'string' ? content : rawContent)
+  const localContent =
+      isStructured && content && typeof content === 'object'
+          ? { ...content }
+          : typeof content === 'string'
+              ? content
+              : rawContent
 
   if (isStructured && localContent && typeof localContent === 'object' && !localContent.status) {
     localContent.status = 'PENDING'
   }
+
   const tempMsg = {
     messageId: tempId,
     senderId: myId.value,
@@ -325,35 +317,27 @@ async function sendMessagePayload({ contentType, content }) {
     content: localContent,
     rawContent,
     createdAtEpochMs: now,
-    _pending: true
+    _pending: true,
   }
   messages.value.push(tempMsg)
   sortMessages()
   recomputeInviteStatuses()
   scrollToBottom()
 
-  // 2) 调用后端发送
   try {
     const resp = await imApi.sendMessage({
-      conversationId: conversationId.value, // 若为空，服务端会使用 peerId 创建会话（取决于你的实现）
+      conversationId: conversationId.value,
       peerId: peerId.value,
       contentType,
-      content: rawContent
+      content: rawContent,
     })
-
-    // 3) 用服务端返回的值覆盖临时消息（避免重复）
     const saved = normalizeMsg(resp?.data ?? resp)
-    // 如果后端可能返回新的 conversationId，这里接收并更新
     if (!conversationId.value && saved.conversationId) {
       conversationId.value = saved.conversationId
     }
-
-    const idx = messages.value.findIndex(m => m.messageId === tempId)
-    if (idx > -1) {
-      messages.value[idx] = saved
-    } else {
-      messages.value.push(saved)
-    }
+    const idx = messages.value.findIndex((m) => m.messageId === tempId)
+    if (idx > -1) messages.value[idx] = saved
+    else messages.value.push(saved)
 
     sortMessages()
     recomputeInviteStatuses()
@@ -362,8 +346,8 @@ async function sendMessagePayload({ contentType, content }) {
     markMessagesAsRead(saved?.messageId)
     return saved
   } catch (error) {
-    messages.value = messages.value.filter(m => m.messageId !== tempId)
-    uni.showToast({ title: '发送失败', icon: 'none' })
+    messages.value = messages.value.filter((m) => m.messageId !== tempId)
+    uni.showToast({ title: 'send failed', icon: 'none' })
     throw error
   }
 }
@@ -378,57 +362,43 @@ function shouldShowInviteActions(message) {
 function inviteStatusText(message) {
   const status = (message?.content?.status || 'PENDING').toUpperCase()
   if (status === 'ACCEPTED') {
-    return message.senderId === myId.value ? '对方已接受邀请' : '你已加入该活动'
+    return message.senderId === myId.value ? 'The other person accepted' : 'You joined this activity'
   }
   if (status === 'DECLINED') {
-    return message.senderId === myId.value ? '对方已拒绝邀请' : '你已拒绝邀请'
+    return message.senderId === myId.value ? 'The other person declined' : 'You declined'
   }
-  return message.senderId === myId.value ? '等待对方回应' : '请选择是否加入'
+  return message.senderId === myId.value ? 'Waiting for response' : 'Please choose to join or decline'
 }
 
 function inviteResponseText(message) {
   const data = message?.content || {}
   const status = (data.status || '').toUpperCase()
-  const responderName = data.responderName || (message.senderId === myId.value ? '你' : (peerName.value || '对方'))
-  const title = data.title ? `「${data.title}」` : '活动'
-  if (status === 'ACCEPTED') {
-    return `${responderName}已加入${title}`
-  }
-  if (status === 'DECLINED') {
-    return `${responderName}拒绝加入${title}`
-  }
-  return `${responderName}回复了${title}`
-}
-
-function bubbleClass(message) {
-  if (message.contentType === 'ACTIVITY_INVITE') {
-    return 'bubble-card'
-  }
-  return ''
+  const responderName =
+      data.responderName || (message.senderId === myId.value ? 'You' : peerName.value || 'Friend')
+  const title = data.title ? ` "${data.title}"` : ' the activity'
+  if (status === 'ACCEPTED') return `${responderName} joined${title}`
+  if (status === 'DECLINED') return `${responderName} declined${title}`
+  return `${responderName} responded to${title}`
 }
 
 async function sendActivityInvite(activity) {
   if (!activity) return
-  try {
-    const inviteId = buildInviteId()
-    const payload = {
-      inviteId,
-      activityId: activity.id,
-      title: activity.title,
-      time: activity.time,
-      timeIso: activity.timeIso,
-      location: activity.location,
-      maxParticipants: activity.maxParticipants,
-      participantsCount: activity.participantsCount,
-      hostId: myId.value,
-      status: 'PENDING'
-    }
-    await sendMessagePayload({ contentType: 'ACTIVITY_INVITE', content: payload })
-    uni.showToast({ title: '已发送邀请', icon: 'success' })
-    toggleActivityPicker(false)
-  } catch (err) {
-    console.warn('发送活动邀请失败', err)
+  const inviteId = `invite-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const payload = {
+    inviteId,
+    activityId: activity.id,
+    title: activity.title,
+    time: activity.time,
+    timeIso: activity.timeIso,
+    location: activity.location,
+    maxParticipants: activity.maxParticipants,
+    participantsCount: activity.participantsCount,
+    hostId: myId.value,
+    status: 'PENDING',
   }
+  await sendMessagePayload({ contentType: 'ACTIVITY_INVITE', content: payload })
+  uni.showToast({ title: 'Invite sent', icon: 'success' })
+  toggleActivityPicker(false)
 }
 
 async function respondToInvite(message, decision) {
@@ -436,7 +406,7 @@ async function respondToInvite(message, decision) {
   if (message._processing) return
   const invite = message.content || {}
   if (!invite.activityId) {
-    uni.showToast({ title: '活动信息缺失', icon: 'none' })
+    uni.showToast({ title: 'Missing activity id', icon: 'none' })
     return
   }
   message._processing = true
@@ -450,33 +420,37 @@ async function respondToInvite(message, decision) {
       title: invite.title,
       status: decision,
       responderId: myId.value,
-      responderName: myName.value || ''
+      responderName: myName.value || '',
     }
-    await sendMessagePayload({ contentType: 'ACTIVITY_INVITE_RESPONSE', content: responsePayload })
+    await sendMessagePayload({
+      contentType: 'ACTIVITY_INVITE_RESPONSE',
+      content: responsePayload,
+    })
     message.content = { ...invite, status: decision }
     recomputeInviteStatuses()
-    if (decision === 'ACCEPTED') {
-      uni.showToast({ title: '已加入活动', icon: 'success' })
-    } else {
-      uni.showToast({ title: '已拒绝邀请', icon: 'none' })
-    }
-  } catch (err) {
-    console.warn('处理邀请失败', err)
-    uni.showToast({ title: '操作失败', icon: 'none' })
+    uni.showToast({ title: decision === 'ACCEPTED' ? 'Joined' : 'Declined', icon: 'none' })
   } finally {
     message._processing = false
   }
 }
 
-/** 按时间排序：旧消息在上，新消息在下 */
-function sortMessages() {
-  messages.value.sort((a, b) => {
-    const ta = a.createdAtEpochMs ?? 0
-    const tb = b.createdAtEpochMs ?? 0
-    if (ta !== tb) return ta - tb
-    const ia = Number(a.messageId ?? 0)
-    const ib = Number(b.messageId ?? 0)
-    return ia - ib
+function recomputeInviteStatuses() {
+  const statusMap = new Map()
+  messages.value.forEach((msg) => {
+    if (msg.contentType === 'ACTIVITY_INVITE_RESPONSE') {
+      const data = msg.content || {}
+      if (data.inviteId) {
+        statusMap.set(data.inviteId, (data.status || 'PENDING').toUpperCase())
+      }
+    }
+  })
+  messages.value = messages.value.map((msg) => {
+    if (msg.contentType !== 'ACTIVITY_INVITE') return msg
+    const invite = msg.content && typeof msg.content === 'object' ? { ...msg.content } : {}
+    const status =
+        statusMap.get(invite.inviteId) || (invite.status || 'PENDING')
+    invite.status = status.toUpperCase()
+    return { ...msg, content: invite }
   })
 }
 
@@ -494,14 +468,13 @@ function markMessagesAsRead(latestMessageId) {
     notifications.markConversationRead(conversationId.value)
   }
   if (conversationId.value && latestMessageId) {
-    imApi.markRead(conversationId.value, latestMessageId).catch(err => {
-      console.warn('标记已读失败', err)
-    })
+    imApi.markRead(conversationId.value, latestMessageId).catch(() => {})
   }
 }
 
-
-
+function goBack() {
+  history.length > 1 ? history.back() : null
+}
 </script>
 
 <style scoped>
@@ -509,226 +482,262 @@ function markMessagesAsRead(latestMessageId) {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f7f8fb;
+  /* 让它不要比屏幕宽 */
+  width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: #f8f9f8;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+  "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
-/* 顶部标题 */
-.chat-header {
-  height: 48px;
-  border-bottom: 1px solid #eee;
+/* 固定在顶部，不跟着滚动 */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw; /* 或 100% 也行 */
+  display: grid;
+  grid-template-columns: 80rpx 1fr 80rpx;
+  align-items: center;
+  height: 112rpx;
+  background: #fff;
+  padding: 0 24rpx;
+  box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.03);
+  z-index: 100; /* 保证在最上面 */
+}
+.back-wrap {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #fff;
+  height: 100%;
+}
+.back-icon {
+  font-size: 80rpx;
+  color: #2f3d2f;
+  line-height: 1;
+  transform: scaleX(0.75);
+  transform-origin: left center;
+  padding: 0 8rpx;
+  margin-top: -4rpx;
 }
 .title {
-  font-size: 18px;
+  text-align: center;
+  font-size: 46rpx;
   font-weight: 700;
-  color: #0b0b0c;
+  color: #1d1d1d;
+}
+.right-spacer {
+  width: 80rpx;
 }
 
-/* 消息区域 */
+/* 聊天主体要让出顶部的112rpx，不然会被顶栏盖住 */
 .chat-body {
   flex: 1;
-  padding: 10px 8px;
+  padding: 24rpx 20rpx 0;
+  /* 顶部留出 topbar 的高度 */
+  margin-top: 112rpx;
+  /* 最多占满屏幕，不横向滚动 */
+  max-width: 100vw;
+  box-sizing: border-box;
 }
-
 .msg-item {
   display: flex;
-  margin: 8px 6px;
+  margin-bottom: 20rpx;
 }
-
 .msg-item.me {
   justify-content: flex-end;
 }
 .msg-item.other {
   justify-content: flex-start;
 }
-
 .bubble {
-  max-width: 70%;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 15px;
-  line-height: 1.4;
+  max-width: 78%;
+  padding: 22rpx 26rpx;
+  border-radius: 32rpx;
+  box-shadow: 0 5rpx 16rpx rgba(0, 0, 0, 0.03);
+  line-height: 1.5;
+  font-size: 30rpx;
   word-break: break-word;
-  background: #fff;
-  color: #111;
-  border-bottom-left-radius: 2px; /* 左侧小尖角 */
-  box-shadow: 0 1px 2px rgba(0,0,0,.03);
+}
+.bubble-other {
+  background: #e6efe1;
+  color: #314131;
+  border-top-left-radius: 16rpx;
+}
+.bubble-me {
+  background: #dde4d9;
+  color: #2f3d2f;
+  border-top-right-radius: 16rpx;
 }
 
-.msg-item.me .bubble {
-  background: #4f8cff;
-  color: #fff;
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 2px; /* 右侧小尖角 */
+/* 底部输入区保持在底部 */
+.composer {
+  position: sticky;
+  bottom: 0;
+  padding: 0 22rpx 32rpx;
+  background: linear-gradient(180deg, rgba(248, 249, 248, 0), #f8f9f8 55%, #f8f9f8 100%);
+  z-index: 20;
+  /* 不要超出屏幕宽度 */
+  max-width: 100vw;
+  box-sizing: border-box;
 }
-
-/* 底部输入栏 */
-.input-bar {
-  padding: 8px;
+.composer-surface {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 16rpx;
   background: #fff;
-  border-top: 1px solid #eee;
+  border-radius: 26rpx;
+  padding: 14rpx 18rpx;
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.04);
 }
-.input-bar .ipt {
+.composer-input {
   flex: 1;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 8px;
-  background: #fff;
-  border: 1px solid #eaeaea;
-  font-size: 14px;
+  border: none;
+  background: transparent;
+  font-size: 30rpx;
+  outline: none;
+  color: #314131;
 }
-.input-bar .btn-send {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  background: #4f8cff;
+.composer-input::placeholder {
+  color: rgba(49, 65, 49, 0.5);
+}
+.action-button {
+  min-width: 150rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  border: none;
+  background: rgba(122, 143, 119, 0.12);
+  color: #7a8f77;
+  font-size: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.send-button {
+  min-width: 140rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  border: none;
+  background: #7a8f77;
   color: #fff;
-  font-size: 14px;
-}
-.input-bar .btn-activity {
-  height: 36px;
-  padding: 0 12px;
-  border-radius: 8px;
-  background: #f0f4ff;
-  color: #2f54eb;
-  font-size: 14px;
-  border: 1px solid #adc6ff;
+  font-size: 28rpx;
+  font-weight: 600;
+  box-shadow: 0 14rpx 28rpx rgba(122, 143, 119, 0.35);
 }
 
+/* 活动卡片 */
 .bubble-card {
-  padding: 0;
   background: transparent;
   box-shadow: none;
+  padding: 0;
 }
-
-.msg-item.me .bubble-card {
-  background: transparent;
-}
-
 .invite-card {
-  min-width: 220px;
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e6f0ff;
-  padding: 12px;
-  box-shadow: 0 4px 12px rgba(79, 140, 255, 0.12);
-  color: #1f1f1f;
+  background: #f1f5ee;
+  border: 1px solid rgba(122, 143, 119, 0.15);
+  border-radius: 24rpx;
+  padding: 20rpx;
+  min-width: 420rpx;
+  box-shadow: 0 6rpx 18rpx rgba(122, 143, 119, 0.12);
+  /* 不要超屏 */
+  max-width: 100%;
+  box-sizing: border-box;
 }
-
 .invite-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #2f3d2f;
+  margin-bottom: 8rpx;
 }
-
 .invite-meta {
   display: block;
-  font-size: 13px;
-  color: #5b6b8b;
-  margin-bottom: 4px;
+  font-size: 26rpx;
+  color: rgba(47, 61, 47, 0.7);
+  margin-bottom: 4rpx;
 }
-
 .invite-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 16rpx;
+  margin-top: 16rpx;
 }
-
-.invite-actions button {
+.invite-btn {
   flex: 1;
-  height: 32px;
-  border-radius: 6px;
-  font-size: 14px;
+  border: none;
+  border-radius: 20rpx;
+  height: 64rpx;
+  font-size: 26rpx;
 }
-
-.btn-accept {
-  background: #52c41a;
+.invite-btn.primary {
+  background: #7a8f77;
   color: #fff;
 }
-
-.btn-decline {
-  background: #f5f5f5;
-  color: #8c8c8c;
+.invite-btn.secondary {
+  background: rgba(122, 143, 119, 0.12);
+  color: #2f3d2f;
 }
-
 .invite-status {
   display: block;
-  margin-top: 10px;
-  font-size: 13px;
-  color: #8c8c8c;
+  margin-top: 14rpx;
+  color: rgba(47, 61, 47, 0.7);
+  font-size: 26rpx;
 }
 
+/* 底部活动选择器 */
 .activity-picker {
-  height: 33vh;
+  height: 34vh;
   background: #fff;
-  border-top: 1px solid #e6eaf2;
-  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid rgba(122, 143, 119, 0.12);
+  box-shadow: 0 -12rpx 24rpx rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
+  max-width: 100vw;
+  box-sizing: border-box;
 }
-
 .picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 18rpx 22rpx 12rpx;
 }
-
 .picker-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f1f1f;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #2f3d2f;
 }
-
-.btn-close {
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: #f5f5f5;
-  font-size: 13px;
-  color: #595959;
+.picker-close {
+  border: none;
+  background: rgba(122, 143, 119, 0.1);
+  border-radius: 16rpx;
+  padding: 8rpx 20rpx;
+  font-size: 26rpx;
+  color: #2f3d2f;
 }
-
 .activity-list {
   flex: 1;
-  padding: 0 16px 16px;
+  padding: 0 22rpx 22rpx;
 }
-
 .picker-hint {
-  color: #8c8c8c;
   text-align: center;
-  margin-top: 20px;
-  font-size: 14px;
+  color: rgba(47, 61, 47, 0.6);
+  margin-top: 20rpx;
+  font-size: 28rpx;
 }
-
 .activity-item {
-  background: linear-gradient(135deg, rgba(79, 140, 255, 0.12), rgba(144, 202, 249, 0.12));
-  border-radius: 12px;
-  padding: 12px;
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  background: #f3f7ef;
+  border: 1px solid rgba(122, 143, 119, 0.12);
+  border-radius: 22rpx;
+  padding: 18rpx 16rpx;
+  margin-top: 14rpx;
 }
-
-.activity-item:first-of-type {
-  margin-top: 0;
-}
-
 .activity-title {
-  font-size: 15px;
+  font-size: 30rpx;
   font-weight: 600;
-  color: #1f1f1f;
+  color: #2f3d2f;
 }
-
 .activity-meta {
-  font-size: 13px;
-  color: #5b6b8b;
+  font-size: 26rpx;
+  color: rgba(47, 61, 47, 0.6);
+  margin-top: 4rpx;
 }
 </style>
+

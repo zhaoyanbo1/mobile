@@ -17,24 +17,24 @@
             NULL              AS avatarUrl,
             pair.conversation_id AS conversationId,
             COALESCE(
-                (
-                    SELECT COUNT(1)
-                    FROM im_message m
-                    WHERE m.conversation_id = pair.conversation_id
-                      AND m.sender_id &lt;&gt; #{userId}
-                      AND (self.last_read_msg_id IS NULL OR m.message_id > self.last_read_msg_id)
-                ),
-                0
+                    (
+                        SELECT COUNT(1)
+                        FROM im_message m
+                        WHERE m.conversation_id = pair.conversation_id
+                          AND m.sender_id &lt;&gt; #{userId}
+                          AND (self.last_read_msg_id IS NULL OR m.message_id > self.last_read_msg_id)
+                    ),
+                    0
             ) AS unreadCount
         FROM user_info ui
-                LEFT JOIN im_dm_pair pair
-                        ON (
-                            pair.user_a = #{userId} AND pair.user_b = ui.user_info_id
-                            OR pair.user_b = #{userId} AND pair.user_a = ui.user_info_id
-                            )
-                LEFT JOIN im_conversation_member self
-                        ON self.conversation_id = pair.conversation_id
-                            AND self.user_id = #{userId}
+                 LEFT JOIN im_dm_pair pair
+                           ON (
+                               pair.user_a = #{userId} AND pair.user_b = ui.user_info_id
+                                   OR pair.user_b = #{userId} AND pair.user_a = ui.user_info_id
+                               )
+                 LEFT JOIN im_conversation_member self
+                           ON self.conversation_id = pair.conversation_id
+                               AND self.user_id = #{userId}
         WHERE ui.user_info_id IN (
             SELECT f.friend_user_id
             FROM friendship f

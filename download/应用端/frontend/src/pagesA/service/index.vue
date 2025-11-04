@@ -107,11 +107,11 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance } from 'vue'
+import { ref, getCurrentInstance, onMounted } from 'vue'
 const { proxy } = getCurrentInstance()
 
 /** ======================
- * Mocked data
+ * 静态数据
  ====================== */
 const icons = { menu: '/static/gg_menu-left-alt.svg' }
 
@@ -126,39 +126,96 @@ const vaccines = ref([
   { id: 2, name: 'Pneumonia Vaccine', description: 'Recommended once a year', dueDate: 'Before Nov 15', completed: false }
 ])
 
+// 我们这页要识别的所有标题
+const SERVICE_TITLES = [
+  'Calcium Tablets',
+  'Vitamin D',
+  'Fish Oil',
+  'Flu Vaccine',
+  'Pneumonia Vaccine'
+]
+
 /** ======================
- * Core function — Add reminder (same as reminder_edit.vue)
+ * 只查今天的记录然后回填（用字符串比对日期）
+ ====================== */
+async function hydrateFromDbToday() {
+  try {
+    const userRes = await proxy.$cf.login.getLoginUser()
+    if (!userRes?.success) return
+
+    // 今天的 yyyy-mm-dd
+    const now = new Date()
+    const yyyy = now.getFullYear()
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    const todayStr = `${yyyy}-${mm}-${dd}` // 形如 2025-11-04
+
+    // 拉一批这个用户的提醒
+    const res = await proxy.$cf.table.list({
+      table_name: 'reminder_item',
+      param: {
+        user_info_user_info_id_1: userRes.data.user_info_id
+      },
+      orderby: 'reminder_time',
+      sort: 'asc',
+      limit: 500
+    })
+
+    const rows = res?.success ? res.data : []
+
+    // 只要：标题是我们几个 + reminder_time 以今天开头
+    const todayRows = rows.filter(r => {
+      if (!SERVICE_TITLES.includes(r.title)) return false
+      const rt = String(r.reminder_time || '')
+      // 有的人后面会带 .0，所以我们只看前 10 位
+      return rt.slice(0, 10) === todayStr
+    })
+
+    // 回填到补剂
+    for (const s of supplements.value) {
+      const hit = todayRows.find(r => r.title === s.name)
+      if (hit) s.taken = true
+    }
+
+    // 回填到疫苗
+    for (const v of vaccines.value) {
+      const hit = todayRows.find(r => r.title === v.name)
+      if (hit) v.completed = true
+    }
+  } catch (e) {
+    console.warn('hydrateFromDbToday failed:', e)
+  }
+}
+
+/** ======================
+ * 写入一条提醒
  ====================== */
 async function addReminder({ reminder_type_enum_id, title, description }) {
   try {
-    // 获取用户信息
     const userRes = await proxy.$cf.login.getLoginUser()
     if (!userRes.success) {
       proxy.$cf.toast({ message: 'Please sign in first', level: 'error' })
       return
     }
 
-    // 组装数据（10分钟后提醒）
     const saveData = {
       reminder_type_enum_id,
       title,
       description,
-      reminder_time: new Date(Date.now() + 10 * 60 * 1000)
-          .toLocaleString('sv-SE', { hour12: false }) // 输出类似 2025-10-20 19:05:02
+      // 仍然用你原来的 10 分钟后
+      reminder_time: new Date(Date.now())
+          .toLocaleString('sv-SE', { hour12: false })
           .replace('T', ' '),
       is_completed: false,
       user_info_user_info_id_1: userRes.data.user_info_id
     }
 
-    // ✅ 使用与 reminder_edit.vue 相同的 update()
     const res = await proxy.$cf.table.update({
       table_name: 'reminder_item',
       param: saveData
     })
 
-    if (res.success) {
-      proxy.$cf.toast({ message: 'Task added successfully', level: 'success' })
-    } else {
+    if (!res.success) {
       proxy.$cf.toast({ message: 'Failed to add task', level: 'error' })
     }
   } catch (err) {
@@ -168,30 +225,44 @@ async function addReminder({ reminder_type_enum_id, title, description }) {
 }
 
 /** ======================
- * User interaction logic
+ * 点击事件
  ====================== */
 async function toggleSupplement(s) {
-  s.taken = !s.taken
+  // 如果已经选中过了，就不允许再改
   if (s.taken) {
-    await addReminder({
-      reminder_type_enum_id: 1, // Medication
-      title: s.name,
-      description: s.description
-    })
+    // 可选的提示
+    // proxy.$cf.toast({ message: 'Already added for today', level: 'info' })
+    return
   }
+
+  s.taken = true
+  await addReminder({
+    reminder_type_enum_id: 1,
+    title: s.name,
+    description: s.description
+  })
 }
 
 async function toggleVaccine(v) {
-  v.completed = !v.completed
+  // 已经完成的就不让再改
   if (v.completed) {
-    await addReminder({
-      reminder_type_enum_id: 2, // Activity
-      title: v.name,
-      description: v.description + ' ' + (v.dueDate || '')
-    })
+    // proxy.$cf.toast({ message: 'Already added for today', level: 'info' })
+    return
   }
+
+  v.completed = true
+  await addReminder({
+    reminder_type_enum_id: 2,
+    title: v.name,
+    description: v.description + ' ' + (v.dueDate || '')
+  })
 }
+
+onMounted(() => {
+  hydrateFromDbToday()
+})
 </script>
+
 
 <style scoped>
 .page{ min-height:100vh; background:#F8F9F8; }

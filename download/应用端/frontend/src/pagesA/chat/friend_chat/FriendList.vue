@@ -1,8 +1,14 @@
 <template>
   <view class="page">
-    <view class="header">
-      <text class="title">我的好友</text>
+    <!-- 顶部栏 -->
+    <view class="topbar">
+      <view class="back-wrap" @click="goBack">
+        <text class="back-icon"><</text>
+      </view>
+      <text class="title">My friend</text>
+      <view class="right-spacer"></view>
     </view>
+
 
     <scroll-view scroll-y class="list">
       <view
@@ -54,7 +60,9 @@ async function load() {
     uni.showToast({title: '加载失败', icon: 'none'})
   }
 }
-
+const goBack = () => {
+  history.length > 1 ? history.back() : null
+}
 function goChat(friend) {
   notifications.setConversationForFriend(friend?.userId, friend?.conversationId)
   notifications.markFriendRead(friend?.userId)
@@ -71,22 +79,50 @@ onShow(load)
 </script>
 
 <style scoped>
+
+.topbar {
+  display: grid;
+  grid-template-columns: 80rpx 1fr 80rpx;
+  align-items: center;          /* 让三列都居中 */
+  height: 112rpx;
+  background: #fff;
+  padding: 0 24rpx;
+}
+
+/* 包一层，用 flex 真正居中 */
+.back-wrap {
+  display: flex;
+  align-items: center;          /* 垂直居中箭头 */
+  height: 100%;
+}
+
+/* 箭头本身 */
+.back-icon {
+  font-size: 80rpx;             /* 不要 110rpx 太大就显得掉得更厉害 */
+  color: #2f3d2f;
+  line-height: 1;
+  transform: scaleX(0.75);      /* 瘦一点 */
+  transform-origin: left center;
+  padding: 0 8rpx;
+  /* 微调往上提一点点，让视觉更平 */
+  margin-top: -4rpx;
+}
+.title {
+  text-align: center;
+  font-size: 46rpx;
+  font-weight: 700;
+  color: #1d1d1d;
+}
+.right-spacer {
+  width: 80rpx;
+}
+
+
 .page {
   display: flex;
   flex-direction: column;
   height: 100vh;
   background: #f5f7fb;
-}
-
-.header {
-  padding: 24rpx;
-  background: #fff;
-  border-bottom: 1px solid #eee;
-}
-
-.title {
-  font-weight: 700;
-  font-size: 34rpx;
 }
 
 .list {

@@ -2,18 +2,21 @@
 <template>
   <base-layout>
     <view class="page">
+      <!-- 顶部栏 -->
       <view class="topbar">
-        <button class="ghost-btn" @click="goBack">
-          <text class="ghost-text">Back</text>
-        </button>
-        <text class="title">My activities</text>
-        <view></view>
+        <view class="back-wrap" @click="goBack">
+          <text class="back-icon"><</text>
+        </view>
+        <text class="title">Manage</text>
+        <view class="right-spacer"></view>
       </view>
 
+      <!-- 错误提示 -->
       <view v-if="error" class="error-banner">
         <text>{{ error }}</text>
       </view>
 
+      <!-- 活动列表 -->
       <scroll-view class="activities" scroll-y>
         <view v-if="!loading && !myActivities.length" class="empty">
           <text>No hosted activities yet. Create one to get started.</text>
@@ -26,27 +29,37 @@
         >
           <view class="card-header">
             <text class="card-title">{{ activity.title }}</text>
-            <button class="ghost-btn small" @click="openEdit(activity)">
-              <text class="ghost-text">Edit</text>
+            <!-- 绿色 + 顶右 -->
+            <button class="pill-btn primary small header-action" @click="openEdit(activity)">
+              <text class="pill-text">Edit</text>
             </button>
           </view>
 
-          <text class="card-description">{{ activity.description }}</text>
+          <text class="card-description" v-if="activity.description">
+            {{ activity.description }}
+          </text>
+
           <view class="card-info">
-            <text>🗓 {{ activity.time }}</text>
-            <text>📍 {{ activity.location }}</text>
-            <text>👥 {{ activity.participantsCount }}/{{ activity.maxParticipants }}</text>
+            <text class="info-row">🗓 {{ activity.time }}</text>
+            <text class="info-row">📍 {{ activity.location }}</text>
+            <text class="info-row">👥 {{ activity.participantsCount }}/{{ activity.maxParticipants }}</text>
           </view>
 
           <view class="divider"></view>
 
+          <!-- 已参加 -->
           <view class="participants">
             <text class="section-title">Participants</text>
-            <view class="pill" v-for="person in activity.participants" :key="person.id">
+            <view
+                class="pill-chip"
+                v-for="person in activity.participants"
+                :key="person.id"
+            >
               <text>{{ person.id === currentUser.id ? 'You' : person.name }}</text>
             </view>
           </view>
 
+          <!-- 待审核 -->
           <view class="requests" v-if="activity.pendingApplicants.length">
             <text class="section-title">Pending requests</text>
             <view
@@ -56,9 +69,11 @@
             >
               <text class="request-name">{{ person.name }}</text>
               <view class="request-actions">
-                <button class="primary-btn approve" @click="decide(activity, person, true)">Approve</button>
-                <button class="ghost-btn reject" @click="decide(activity, person, false)">
-                  <text class="ghost-text">Reject</text>
+                <button class="pill-btn primary xs" @click="decide(activity, person, true)">
+                  <text class="pill-text">Approve</text>
+                </button>
+                <button class="pill-btn ghost xs danger" @click="decide(activity, person, false)">
+                  <text class="pill-text">Reject</text>
                 </button>
               </view>
             </view>
@@ -69,9 +84,13 @@
         </view>
       </scroll-view>
 
+      <!-- 编辑弹窗 -->
       <view v-if="editing" class="modal-mask" @click.self="closeEdit">
         <view class="modal">
-          <text class="modal-title">Edit activity</text>
+          <view class="modal-head">
+            <text class="modal-title">Edit activity</text>
+            <text class="modal-close" @click="closeEdit">×</text>
+          </view>
 
           <view class="form-field">
             <text class="label">Title</text>
@@ -106,27 +125,25 @@
             />
           </view>
 
-          <view class="form-field columns">
-            <view>
+          <view class="form-field row">
+            <view class="col">
               <text class="label">Min people</text>
               <picker
                   mode="selector"
                   :range="participantOptions"
                   :value="getParticipantIndex(editForm.minParticipants)"
                   @change="onSelectMin"
-                  class="picker"
               >
                 <view class="picker-display">{{ editForm.minParticipants }} people</view>
               </picker>
             </view>
-            <view>
+            <view class="col">
               <text class="label">Max people</text>
               <picker
                   mode="selector"
                   :range="participantOptions"
                   :value="getParticipantIndex(editForm.maxParticipants)"
                   @change="onSelectMax"
-                  class="picker"
               >
                 <view class="picker-display">{{ editForm.maxParticipants }} people</view>
               </picker>
@@ -135,9 +152,12 @@
 
           <text v-if="formError" class="error">{{ formError }}</text>
 
+          <!-- 并排铺满 -->
           <view class="modal-actions">
-            <button class="ghost-btn" @click="closeEdit"><text class="ghost-text">Cancel</text></button>
-            <button class="primary-btn" @click="submitEdit" :disabled="submitting">
+            <button class="pill-btn ghost w-1-2" @click="closeEdit">
+              <text class="pill-text">Cancel</text>
+            </button>
+            <button class="pill-btn primary w-1-2" @click="submitEdit" :disabled="submitting">
               <text>{{ submitting ? 'Saving…' : 'Save changes' }}</text>
             </button>
           </view>
@@ -157,7 +177,7 @@ const currentUser = ref({ id: null, name: '' })
 const activities = ref([])
 const loading = ref(false)
 const error = ref('')
-const participantOptions = Object.freeze(Array.from({ length: 9 }, (_, index) => index + 2))
+const participantOptions = Object.freeze(Array.from({ length: 9 }, (_, i) => i + 2))
 
 const editing = ref(false)
 const editingId = ref('')
@@ -177,6 +197,24 @@ const myActivities = computed(() => activities.value)
 function mapUser (raw) {
   if (!raw) return { id: null, name: '' }
   return { id: raw.id ?? raw.userId ?? null, name: raw.name ?? raw.username ?? '' }
+}
+
+function normalizePickerValue (value) {
+  if (!value) return ''
+  const raw = String(value).replace('T', ' ').replace(/Z$/, '').trim()
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)) return raw
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw)) return `${raw}:00`
+  const d = new Date(value)
+  if (!Number.isNaN(d.getTime())) {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const hh = String(d.getHours()).padStart(2, '0')
+    const mm = String(d.getMinutes()).padStart(2, '0')
+    const ss = String(d.getSeconds()).padStart(2, '0')
+    return `${y}-${m}-${day} ${hh}:${mm}:${ss}`
+  }
+  return raw
 }
 
 function mapActivity (raw) {
@@ -200,8 +238,8 @@ function getParticipantIndex (value) {
   return idx === -1 ? 0 : idx
 }
 
-function onSelectMin (event) {
-  const idx = Number(event?.detail?.value || 0)
+function onSelectMin (e) {
+  const idx = Number(e?.detail?.value || 0)
   const selected = participantOptions[idx] ?? participantOptions[0]
   editForm.minParticipants = selected
   if (editForm.maxParticipants < selected) {
@@ -209,8 +247,8 @@ function onSelectMin (event) {
   }
 }
 
-function onSelectMax (event) {
-  const idx = Number(event?.detail?.value || participantOptions.length - 1)
+function onSelectMax (e) {
+  const idx = Number(e?.detail?.value || participantOptions.length - 1)
   const selected = participantOptions[idx] ?? participantOptions[participantOptions.length - 1]
   editForm.maxParticipants = selected
   if (editForm.minParticipants > selected) {
@@ -218,36 +256,14 @@ function onSelectMax (event) {
   }
 }
 
-function normalizePickerValue (value) {
-  if (!value) return ''
-  const raw = String(value).replace('T', ' ').replace(/Z$/, '').trim()
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)) {
-    return raw
-  }
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(raw)) {
-    return `${raw}:00`
-  }
-  const parsed = new Date(value)
-  if (!Number.isNaN(parsed.getTime())) {
-    const y = parsed.getFullYear()
-    const m = String(parsed.getMonth() + 1).padStart(2, '0')
-    const d = String(parsed.getDate()).padStart(2, '0')
-    const hh = String(parsed.getHours()).padStart(2, '0')
-    const mm = String(parsed.getMinutes()).padStart(2, '0')
-    const ss = String(parsed.getSeconds()).padStart(2, '0')
-    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`
-  }
-  return raw
+function toPickerValue (v) {
+  return normalizePickerValue(v)
 }
 
-function toPickerValue (value) {
-  return normalizePickerValue(value)
-}
-
-function toApiDateTime (value) {
-  if (!value) return ''
-  const normalized = normalizePickerValue(value)
-  return normalized ? normalized.slice(0, 16) : ''
+function toApiDateTime (v) {
+  if (!v) return ''
+  const n = normalizePickerValue(v)
+  return n ? n.slice(0, 16) : ''
 }
 
 function getAuthHeaders () {
@@ -256,9 +272,9 @@ function getAuthHeaders () {
 }
 
 async function callApi (method, url, data, query = {}) {
-  const base = ''
+  const base = 'http://40.82.192.142'
   const q = new URLSearchParams(query).toString()
-  const full = base + url + (q ? `?${q}` : '')
+  const full = `${base}${url}${q ? `?${q}` : ''}`
   const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() }
 
   return new Promise((resolve, reject) => {
@@ -347,9 +363,9 @@ function validateForm () {
     formError.value = 'Min people cannot exceed max people.'
     return false
   }
-  const activity = activities.value.find(act => act.id === editingId.value)
-  if (activity && activity.participantsCount > editForm.maxParticipants) {
-    formError.value = `Max people must be at least ${activity.participantsCount}.`
+  const act = activities.value.find(a => a.id === editingId.value)
+  if (act && act.participantsCount > editForm.maxParticipants) {
+    formError.value = `Max people must be at least ${act.participantsCount}.`
     return false
   }
   formError.value = ''
@@ -401,299 +417,291 @@ onShow(() => {
 </script>
 
 <style scoped>
-:root {
-  --bg: #f6f7fb;
-  --text: #131313;
-  --muted: #5f6677;
-  --accent: #4b74ff;
-  --safe: #3fb68b;
-  --pending: #f4a259;
-  --card: #ffffff;
-  --shadow: 0 12rpx 32rpx rgba(15, 15, 40, 0.08);
-}
-
 .page {
   min-height: 100vh;
-  background: var(--bg);
+  background: #f8f8f8;
   display: flex;
   flex-direction: column;
 }
 
+/* 顶部栏 */
 .topbar {
   display: grid;
-  grid-template-columns: 220rpx 1fr 220rpx;
+  grid-template-columns: 80rpx 1fr 80rpx;
   align-items: center;
-  padding: 32rpx 30rpx 16rpx;
+  height: 120rpx;
+  background: #fff;
+  padding: 0 24rpx;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
 }
-
+.back-wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.back-icon {
+  font-size: 80rpx;
+  color: #2f3d2f;
+  line-height: 1;
+  transform: scaleX(0.75);
+  transform-origin: left center;
+  padding: 0 8rpx;
+  margin-top: -4rpx;
+}
 .title {
   text-align: center;
-  font-size: 56rpx;
-  font-weight: 800;
-  color: var(--text);
+  font-size: 46rpx;
+  font-weight: 700;
+  color: #1d1d1d;
+}
+.right-spacer {
+  width: 80rpx;
 }
 
+/* 错误提示 */
 .error-banner {
-  margin: 0 36rpx;
-  padding: 16rpx 20rpx;
+  margin: 0 24rpx 12rpx;
+  padding: 18rpx 20rpx;
   border-radius: 18rpx;
   background: rgba(241, 92, 92, 0.12);
   color: #d14343;
-  font-size: 30rpx;
-}
-
-.ghost-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12rpx;
-  padding: 16rpx 24rpx;
-  border-radius: 999rpx;
-  border: 2rpx solid rgba(75, 116, 255, 0.22);
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 4rpx 10rpx rgba(15, 15, 40, 0.08);
-}
-
-.ghost-btn.small {
-  padding: 12rpx 20rpx;
   font-size: 28rpx;
 }
 
-.ghost-text {
-  font-size: 34rpx;
-  font-weight: 600;
-  color: var(--accent);
-}
-
+/* 列表 */
 .activities {
   flex: 1;
-  padding: 24rpx 36rpx 120rpx;
+  height: calc(100vh - 120rpx);
+  padding: 0 24rpx 120rpx;
   box-sizing: border-box;
 }
-
 .activity-card {
-  background: var(--card);
-  border-radius: 32rpx;
-  padding: 32rpx;
-  margin-bottom: 32rpx;
-  box-shadow: var(--shadow);
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 22rpx 20rpx 20rpx;
+  margin-top: 18rpx;
+  box-shadow: 0 10rpx 22rpx rgba(0, 0, 0, 0.03);
 }
-
 .card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12rpx;
+  justify-content: flex-start;  /* 不再用 space-between */
+  gap: 12rpx;
+  margin-bottom: 10rpx;
+}
+
+.header-action {
+  margin-left: auto;
+  margin-right: 0;
 }
 
 .card-title {
-  font-size: 44rpx;
-  font-weight: 800;
-  color: var(--text);
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1d1d1d;
 }
-
 .card-description {
-  font-size: 32rpx;
-  color: var(--text);
+  font-size: 28rpx;
+  color: #374151;
   line-height: 1.5;
-  margin-bottom: 18rpx;
+  margin-bottom: 12rpx;
 }
-
 .card-info {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
-  font-size: 30rpx;
-  color: var(--text);
+  gap: 6rpx;
+  font-size: 26rpx;
+  color: #1f2937;
 }
-
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
 .divider {
-  margin: 20rpx 0;
-  border-bottom: 2rpx solid rgba(19, 19, 19, 0.08);
+  height: 1px;
+  background: rgba(0, 0, 0, 0.04);
+  margin: 16rpx 0 14rpx;
 }
 
-.participants,
-.requests {
-  margin-bottom: 20rpx;
-}
-
+/* participants / requests */
 .section-title {
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: 700;
-  color: var(--text);
-  margin-bottom: 16rpx;
+  color: #1d1d1d;
+  margin-bottom: 10rpx;
 }
-
 .section-title.muted {
-  color: var(--muted);
   font-weight: 500;
+  color: #9ca3af;
 }
-
-.pill {
+.pill-chip {
   display: inline-flex;
   align-items: center;
-  padding: 10rpx 20rpx;
+  padding: 8rpx 16rpx;
   margin: 0 12rpx 12rpx 0;
   border-radius: 999rpx;
-  background: rgba(75, 116, 255, 0.12);
-  color: var(--accent);
-  font-size: 28rpx;
-  font-weight: 600;
+  background: rgba(131, 159, 144, 0.18);
+  color: #2f3d2f;
+  font-size: 24rpx;
+  font-weight: 500;
 }
-
 .request {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(243, 244, 248, 0.9);
-  border-radius: 24rpx;
-  padding: 20rpx 24rpx;
-  margin-bottom: 16rpx;
+  background: #f2f4f3;
+  border-radius: 16rpx;
+  padding: 14rpx 14rpx 14rpx 20rpx;
+  margin-bottom: 14rpx;
 }
-
 .request-name {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: var(--text);
+  font-size: 28rpx;
+  color: #1d1d1d;
 }
-
 .request-actions {
   display: flex;
-  gap: 16rpx;
+  gap: 10rpx;
 }
 
-.primary-btn {
-  padding: 16rpx 28rpx;
-  border-radius: 20rpx;
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #4b74ff, #6a99ff);
-  box-shadow: 0 12rpx 24rpx rgba(75, 116, 255, 0.2);
-}
-
-.primary-btn.approve {
-  background: linear-gradient(135deg, #3fb68b, #5bd7a5);
-  box-shadow: 0 12rpx 24rpx rgba(63, 182, 139, 0.24);
-}
-
-.ghost-btn.reject {
-  background: rgba(255, 255, 255, 0.9);
-  border: 2rpx solid rgba(209, 67, 67, 0.35);
-}
-
-.empty {
-  margin-top: 80rpx;
-  text-align: center;
-  font-size: 32rpx;
-  color: var(--muted);
-}
-
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(12, 16, 40, 0.52);
+/* 按钮统一 */
+.pill-btn {
+  border: none;
+  border-radius: 22rpx;
+  padding: 13rpx 22rpx;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 40rpx;
-  z-index: 20;
+  gap: 8rpx;
+  box-shadow: 0 6rpx 14rpx rgba(0, 0, 0, 0.03);
 }
-
-.modal {
-  width: 100%;
-  max-width: 720rpx;
-  background: var(--card);
-  border-radius: 36rpx;
-  padding: 40rpx;
-  box-shadow: 0 24rpx 44rpx rgba(15, 15, 40, 0.18);
+.pill-btn.small {
+  padding: 10rpx 20rpx;
 }
-
-.modal-title {
-  font-size: 44rpx;
-  font-weight: 800;
-  margin-bottom: 24rpx;
+.pill-btn.xs {
+  padding: 8rpx 16rpx;
 }
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 24rpx;
+.pill-btn.primary {
+  background: #839f90;
+  color: #fff;
 }
-
-.form-field.columns {
-  flex-direction: row;
-  gap: 24rpx;
+.pill-btn.ghost {
+  background: #fff;
+  color: #1d1d1d;
+  border: 1px solid rgba(131, 159, 144, 0.25);
 }
-
-.form-field.columns view {
+.pill-btn.ghost.danger {
+  border-color: rgba(209, 67, 67, 0.25);
+  color: #d14343;
+}
+.pill-text {
+  font-size: 26rpx;
+  font-weight: 600;
+}
+.w-1-2 {
   flex: 1;
 }
 
-.label {
+.empty {
+  text-align: center;
+  padding: 70rpx 0 140rpx;
+  color: #9ca3af;
   font-size: 28rpx;
-  color: var(--muted);
-  margin-bottom: 12rpx;
 }
 
-.input,
-.textarea {
-  background: #f3f4f8;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  font-size: 32rpx;
-  color: var(--text);
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 24rpx;
+  z-index: 50;
 }
-
-.textarea {
-  min-height: 160rpx;
+.modal {
+  width: 100%;
+  max-width: 720rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx 24rpx 26rpx;
+  box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.12);
 }
-
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+.modal-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1d1d1d;
+}
+.modal-close {
+  font-size: 50rpx;
+  line-height: 1;
+  color: #6b7280;
+}
+.form-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18rpx;
+}
+.form-field.row {
+  flex-direction: row;
+  gap: 14rpx;
+}
+.form-field .col {
+  flex: 1;
+}
+.label {
+  font-size: 26rpx;
+  color: #4b5563;
+  margin-bottom: 8rpx;
+}
 .input-control {
   width: 100%;
 }
-
-.picker {
-  width: 100%;
-}
-
-.picker-display {
-  background: #f3f4f8;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  font-size: 32rpx;
-  color: var(--text);
-}
-
 :deep(.uni-easyinput__content),
 :deep(.uni-date-editor) {
-  background: #f3f4f8 !important;
-  border-radius: 20rpx;
+  background: #f3f4f6 !important;
+  border-radius: 16rpx !important;
+  border: 1px solid #e5e7eb !important;
   min-height: 80rpx;
   padding: 0 24rpx;
-  border: none;
 }
-
 :deep(.uni-easyinput__content-input),
 :deep(.uni-date-editor input) {
-  font-size: 32rpx;
-  color: var(--text);
+  font-size: 30rpx;
+  color: #1f2937;
 }
-
-:deep(.uni-easyinput__placeholder-class),
-:deep(.uni-date-editor .uni-input-placeholder) {
-  color: var(--muted) !important;
+.textarea {
+  background: #f3f4f6;
+  border-radius: 16rpx;
+  min-height: 140rpx;
+  padding: 16rpx 18rpx;
+  font-size: 28rpx;
+  border: 1px solid #e5e7eb;
 }
-
+.picker-display {
+  background: #f3f4f6;
+  border-radius: 16rpx;
+  min-height: 80rpx;
+  padding: 0 20rpx;
+  display: flex;
+  align-items: center;
+  font-size: 30rpx;
+  color: #1f2937;
+}
 .error {
   color: #d14343;
-  font-size: 28rpx;
-  margin-bottom: 20rpx;
+  font-size: 26rpx;
+  margin-bottom: 16rpx;
 }
-
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 18rpx;
+  gap: 12rpx;
+  margin-top: 4rpx;
 }
 </style>

@@ -1,84 +1,77 @@
 <template>
-  <div class="chat-wrap">
+  <view class="chat-page">
     <!-- 顶部栏 -->
     <view class="topbar">
-      <button class="back-button" @click="goBack" aria-label="Back">
-        <span aria-hidden="true">←</span>
-      </button>
-      <text class="topbar-title">LiveWell Coach</text>
-      <!--      <button-->
-      <!--          class="topbar-action"-->
-      <!--          @click="newConversation"-->
-      <!--          aria-label="New"-->
-      <!--          title="New"-->
-      <!--      >-->
-      <!--        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">-->
-      <!--          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>-->
-      <!--        </svg>-->
-      <!--      </button>-->
+      <view class="back-wrap" @click="goBack">
+        <text class="back-icon"><</text>
+      </view>
+      <text class="title">LiveWell Coach</text>
+      <view class="right-spacer"></view>
     </view>
 
-    <!-- 消息区 -->
-    <main ref="scrollRef" class="messages" @scroll="handleScroll">
-      <div v-if="historyLoading" class="history-loading">Loading history...</div>
-      <div v-for="m in messages" :key="m.id" class="message-row" :class="m.role">
-        <template v-if="m.role === 'assistant'">
-          <img class="avatar assistant-avatar" :src="avatarUrl" alt="assistant" />
-          <div class="bubble assistant-bubble" :class="{ 'is-error': m.status === 'ERROR', 'is-streaming': m.streaming }">
-            <div class="bubble-text">
-              <template v-if="m.text">
-                {{ formatAssistantText(m.text) }}
-              </template>
-              <template v-else>&nbsp;</template>
-              <span v-if="m.streaming" class="cursor"></span>
-            </div>
-            <div v-if="m.status === 'ERROR' && m.errorMessage" class="error-text">{{ m.errorMessage }}</div>
-          </div>
-        </template>
-        <template v-else>
-          <img class="avatar user-avatar" :src="userAvatarUrl" alt="user" />
-          <div class="bubble user-bubble">
-            <div class="bubble-text">{{ m.text }}</div>
-          </div>
-        </template>
-      </div>
 
-      <!-- 正在流式生成时的临时气泡 -->
-      <!--      <div v-if="streamingChunk" class="row assistant">-->
-      <!--        <img class="avatar" :src="avatarUrl" alt="assistant" />-->
-      <!--        <div class="bubble assistant-bubble">{{ streamingChunk }}</div>-->
-      <!--      </div>-->
-    </main>
+    <!-- 聊天主体 -->
+    <view class="chat-body">
+      <main ref="scrollRef" class="messages" @scroll="handleScroll">
+        <view v-if="historyLoading" class="history-loading">Loading history...</view>
 
-    <button
-        v-if="showScrollToBottom"
-        class="scroll-to-bottom"
-        type="button"
-        @click="jumpToLatest"
-        aria-label="Back to new"
-    >
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <path
-            d="M12 4a1 1 0 0 1 1 1v9.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L11 14.586V5a1 1 0 0 1 1-1zM5 19a1 1 0 1 1 0-2h14a1 1 0 1 1 0 2H5z"
-            fill="currentColor"
-        />
-      </svg>
-    </button>
+        <view
+            v-for="m in messages"
+            :key="m.id"
+            class="message-row"
+            :class="m.role"
+        >
+          <!-- 助手消息 -->
+          <template v-if="m.role === 'assistant'">
+            <image class="avatar assistant-avatar" :src="avatarUrl" />
+            <view
+                class="bubble assistant-bubble"
+                :class="{ 'is-error': m.status === 'ERROR', 'is-streaming': m.streaming }"
+            >
+              <view class="bubble-text">
+                <template v-if="m.text">
+                  {{ formatAssistantText(m.text) }}
+                </template>
+                <template v-else>&nbsp;</template>
+                <text v-if="m.streaming" class="cursor"></text>
+              </view>
+              <view v-if="m.status === 'ERROR' && m.errorMessage" class="error-text">
+                {{ m.errorMessage }}
+              </view>
+            </view>
+          </template>
 
-    <!-- 底部输入栏 -->
-    <footer class="composer">
-      <div class="composer-surface">
+          <!-- 用户消息（不显示头像） -->
+          <template v-else>
+            <view class="bubble user-bubble">
+              <view class="bubble-text">{{ m.text }}</view>
+            </view>
+          </template>
+        </view>
+      </main>
+
+      <!-- 回到底部按钮 -->
+      <button
+          v-if="showScrollToBottom"
+          class="scroll-to-bottom"
+          type="button"
+          @click="jumpToLatest"
+          aria-label="Back to new"
+      >
+        ↓
+      </button>
+    </view>
+
+    <!-- 底部输入条 -->
+    <view class="composer">
+      <view class="composer-surface">
         <button
             class="icon-button mic-button"
-            title="Voice input"
-            aria-label="Voice input"
             @click="toggleRecording"
             :class="{ active: isRecording }"
+            aria-label="Voice input"
         >
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path d="M19 11a7 7 0 0 1-14 0M12 19v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
+          🎤
         </button>
         <input
             class="composer-input"
@@ -88,25 +81,31 @@
             @keydown.enter.exact.prevent="send"
         />
         <button
-            class="icon-button send-action"
+            class="icon-button send-button"
             :disabled="loading || !input.trim()"
             @click="send"
-            title="Send"
             aria-label="Send"
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path d="M4 4l16 8-16 8 4-8-4-8z" fill="currentColor"/>
-          </svg>
+          ➤
         </button>
-      </div>
-    </footer>
-    <view v-if="pendingToolCall" class="tool-modal-backdrop" role="dialog" aria-modal="true">
+      </view>
+    </view>
+
+    <!-- tool 弹窗 -->
+    <view
+        v-if="pendingToolCall"
+        class="tool-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+    >
       <view class="tool-modal">
         <button class="modal-close" aria-label="Close" @click="!toolSubmitting && declineToolCall()">×</button>
         <text class="modal-title">Add this to your todo list?</text>
+
         <view class="modal-summary" v-if="pendingToolCall.sanitizedText">
           <text class="modal-summary-text">{{ pendingToolCall.sanitizedText }}</text>
         </view>
+
         <view class="modal-row">
           <text class="modal-label">Type</text>
           <text class="modal-value">{{ describeToolType(pendingToolCall.request?.type) }}</text>
@@ -131,28 +130,30 @@
           <text class="modal-label">Priority</text>
           <text class="modal-value">{{ (pendingToolCall.request?.priority || 'medium').toUpperCase() }}</text>
         </view>
+
         <text v-if="toolError" class="modal-error">{{ toolError }}</text>
+
         <view class="modal-actions">
-          <button class="modal-btn secondary" :disabled="toolSubmitting" @click="declineToolCall">No thanks</button>
+          <button class="modal-btn secondary" :disabled="toolSubmitting" @click="declineToolCall">
+            No thanks
+          </button>
           <button class="modal-btn primary" :disabled="toolSubmitting" @click="confirmToolCall">
             {{ toolSubmitting ? 'Saving…' : 'Add to list' }}
           </button>
         </view>
       </view>
     </view>
-  </div>
+  </view>
 </template>
 
 <script setup>
-// import {ref, nextTick, onBeforeUnmount, getCurrentInstance} from 'vue'
-import {ref, nextTick, onBeforeUnmount, getCurrentInstance, onMounted, watch} from 'vue'
+import { ref, nextTick, onBeforeUnmount, getCurrentInstance, onMounted, watch } from 'vue'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { marked } from 'marked'
 import { voiceBus } from '@/voice/bus'
 
-// 头像：随便用一张本地图、CDN、或 emoji 占位
-const avatarUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9d1-1f3fb-200d-1f9af.svg'
-const userAvatarUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f464.svg'
+const avatarUrl =
+    'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9d1-1f3fb-200d-1f9af.svg'
 
 marked.setOptions({
   mangle: false,
@@ -161,22 +162,15 @@ marked.setOptions({
 })
 
 let domParser = null
-
 const ensureDomParser = () => {
-  if (typeof window === 'undefined') {
-    return null
-  }
-  if (!domParser) {
-    domParser = new DOMParser()
-  }
+  if (typeof window === 'undefined') return null
+  if (!domParser) domParser = new DOMParser()
   return domParser
 }
 
 const formatAssistantText = (text) => {
   const source = typeof text === 'string' ? text : ''
-  if (!source) {
-    return ''
-  }
+  if (!source) return ''
   try {
     const html = marked.parse(source)
     const parser = ensureDomParser()
@@ -193,21 +187,16 @@ const formatAssistantText = (text) => {
 const { proxy } = getCurrentInstance()
 
 const input = ref('')
-const messages = ref([
-  // 可选：默认欢迎语
-  // { role: 'assistant', text: 'Hi! Ask me anything.' }
-])
-//const streamingChunk = ref('')
+const messages = ref([])
 const loading = ref(false)
 const scrollRef = ref(null)
 const showScrollToBottom = ref(false)
-// let es = null
+
 const conversationId = ref('')
 const conversationCache = ref(null)
 const CONVERSATION_CACHE_KEY = 'ai_chat_conversation'
-const CONVERSATION_MAX_AGE_MS = 12 * 60 * 60 * 1000 // 12 hours
-// const HISTORY_LIMIT = 10
-// let ctrl = null
+const CONVERSATION_MAX_AGE_MS = 12 * 60 * 60 * 1000
+
 const streamingMessage = ref(null)
 const historyCursor = ref(null)
 const hasMoreHistory = ref(true)
@@ -227,8 +216,8 @@ const pendingToolCall = ref(null)
 const toolSubmitting = ref(false)
 const toolError = ref('')
 
-
-const createLocalId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+const createLocalId = (prefix) =>
+    `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
 let windowScrollHandler = null
 
@@ -258,7 +247,6 @@ const scrollToBottom = async () => {
     showScrollToBottom.value = false
   }
 }
-
 const jumpToLatest = async () => {
   await scrollToBottom()
   showScrollToBottom.value = false
@@ -276,12 +264,8 @@ const buildAuthHeaders = () => {
   }
   try {
     const token = uni.getStorageSync('h5_token')
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-  } catch (e) {
-    // ignore storage errors
-  }
+    if (token) headers.Authorization = `Bearer ${token}`
+  } catch (e) {}
   return headers
 }
 
@@ -295,9 +279,7 @@ const mapMessage = (record) => ({
 })
 
 const ensureUser = async () => {
-  if (userId.value) {
-    return userId.value
-  }
+  if (userId.value) return userId.value
   const res = await proxy?.$cf?.login?.getLoginUser?.()
   if (res?.success && res.data?.user_info_id) {
     userId.value = res.data.user_info_id
@@ -307,9 +289,7 @@ const ensureUser = async () => {
 }
 
 const restoreLatestConversationId = async () => {
-  if (!proxy?.$cf?.chat?.listConversations || !userId.value) {
-    return ''
-  }
+  if (!proxy?.$cf?.chat?.listConversations || !userId.value) return ''
   try {
     const res = await proxy.$cf.chat.listConversations({
       userId: userId.value,
@@ -317,17 +297,11 @@ const restoreLatestConversationId = async () => {
       size: 1,
       status: 'ACTIVE',
     })
-    if (!res?.success) {
-      return ''
-    }
+    if (!res?.success) return ''
     const records = Array.isArray(res.data?.records) ? res.data.records : []
     const latest = records.find((item) => item?.conversationId)
-    if (!latest) {
-      return ''
-    }
-    if (conversationId.value === latest.conversationId) {
-      return conversationId.value
-    }
+    if (!latest) return ''
+    if (conversationId.value === latest.conversationId) return conversationId.value
     conversationCache.value = {
       id: latest.conversationId,
       createdAt: new Date().toISOString(),
@@ -341,12 +315,8 @@ const restoreLatestConversationId = async () => {
 }
 
 const loadHistory = async ({ reset = false, prepend = false, scroll = false } = {}) => {
-  if (!conversationId.value || !userId.value || historyLoading.value) {
-    return 0
-  }
-  if (prepend && !hasMoreHistory.value) {
-    return 0
-  }
+  if (!conversationId.value || !userId.value || historyLoading.value) return 0
+  if (prepend && !hasMoreHistory.value) return 0
   historyLoading.value = true
   try {
     const res = await proxy?.$cf?.chat?.fetchMessages({
@@ -392,28 +362,19 @@ const loadCompleteHistory = async () => {
     hasMoreHistory.value = false
     return 0
   }
-  if (historyLoading.value) {
-    return 0
-  }
+  if (historyLoading.value) return 0
   messages.value = []
   historyCursor.value = null
   hasMoreHistory.value = true
   let total = 0
   let firstBatch = true
   while (hasMoreHistory.value) {
-    const loaded = await loadHistory({
-      reset: firstBatch,
-      prepend: !firstBatch,
-    })
-    if (loaded <= 0) {
-      break
-    }
+    const loaded = await loadHistory({ reset: firstBatch, prepend: !firstBatch })
+    if (loaded <= 0) break
     total += loaded
     firstBatch = false
   }
-  if (total > 0) {
-    await scrollToBottom()
-  }
+  if (total > 0) await scrollToBottom()
   return total
 }
 
@@ -434,24 +395,18 @@ const handleScroll = async (event) => {
 
 const finalizeStream = ({ errorMessage, cancelled } = {}) => {
   const current = streamingMessage.value
-  if (!current) {
-    return
-  }
+  if (!current) return
   current.streaming = false
   if (errorMessage) {
     current.status = 'ERROR'
-    if (!current.text) {
-      current.text = ''
-    }
+    if (!current.text) current.text = ''
     current.errorMessage = errorMessage
     currentUtteranceId = null
   } else if (cancelled) {
     current.status = 'FINAL'
     if (!current.text) {
       const idx = messages.value.indexOf(current)
-      if (idx !== -1) {
-        messages.value.splice(idx, 1)
-      }
+      if (idx !== -1) messages.value.splice(idx, 1)
     }
     currentUtteranceId = null
   } else {
@@ -474,26 +429,17 @@ const stopStream = () => {
   }
   loading.value = false
 }
+
 const readConversationCache = () => {
-  if (typeof window === 'undefined') {
-    return null
-  }
+  if (typeof window === 'undefined') return null
   try {
     const raw = localStorage.getItem(CONVERSATION_CACHE_KEY)
-    if (!raw) {
-      return null
-    }
+    if (!raw) return null
     const parsed = JSON.parse(raw)
-    if (!parsed?.id || !parsed?.createdAt) {
-      return null
-    }
+    if (!parsed?.id || !parsed?.createdAt) return null
     const createdAt = new Date(parsed.createdAt)
-    if (Number.isNaN(createdAt.getTime())) {
-      return null
-    }
-    if (Date.now() - createdAt.getTime() > CONVERSATION_MAX_AGE_MS) {
-      return null
-    }
+    if (Number.isNaN(createdAt.getTime())) return null
+    if (Date.now() - createdAt.getTime() > CONVERSATION_MAX_AGE_MS) return null
     return { id: parsed.id, createdAt: parsed.createdAt }
   } catch (error) {
     console.warn('Failed to read cached conversation', error)
@@ -502,33 +448,22 @@ const readConversationCache = () => {
 }
 
 const isConversationFresh = () => {
-  if (!conversationCache.value?.createdAt) {
-    return false
-  }
+  if (!conversationCache.value?.createdAt) return false
   const createdAt = new Date(conversationCache.value.createdAt)
-  if (Number.isNaN(createdAt.getTime())) {
-    return false
-  }
+  if (Number.isNaN(createdAt.getTime())) return false
   return Date.now() - createdAt.getTime() <= CONVERSATION_MAX_AGE_MS
 }
 
-
 const ensureConversation = async (titleHint) => {
-  if (conversationId.value && isConversationFresh()) {
-    return conversationId.value
-  }
+  if (conversationId.value && isConversationFresh()) return conversationId.value
   if (!conversationId.value) {
     const restored = await restoreLatestConversationId()
-    if (restored) {
-      return restored
-    }
+    if (restored) return restored
   } else if (!isConversationFresh()) {
     const previousId = conversationId.value
     conversationId.value = ''
     const restored = await restoreLatestConversationId()
-    if (restored) {
-      return restored
-    }
+    if (restored) return restored
     conversationId.value = previousId
   }
   const res = await proxy?.$cf?.chat?.createConversation({
@@ -551,9 +486,8 @@ const handleStreamError = (message) => {
 
 const send = async () => {
   const q = input.value.trim()
-  if (!q || loading.value) {
-    return
-  }
+  if (!q || loading.value) return
+
   try {
     await ensureUser()
   } catch (error) {
@@ -610,13 +544,9 @@ const send = async () => {
   }
   try {
     const tzOptions = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions() : null
-    if (tzOptions?.timeZone) {
-      payload.timezone = tzOptions.timeZone
-    }
+    if (tzOptions?.timeZone) payload.timezone = tzOptions.timeZone
     const offsetMinutes = new Date().getTimezoneOffset()
-    if (!Number.isNaN(offsetMinutes)) {
-      payload.utcOffsetMinutes = offsetMinutes
-    }
+    if (!Number.isNaN(offsetMinutes)) payload.utcOffsetMinutes = offsetMinutes
   } catch (error) {
     console.warn('Failed to capture timezone info', error)
   }
@@ -628,9 +558,7 @@ const send = async () => {
     headers: buildAuthHeaders(),
     signal: ctrl.signal,
     onopen(response) {
-      if (response.ok) {
-        return
-      }
+      if (response.ok) return
       handleStreamError(`请求失败(${response.status})`)
       throw new Error(`HTTP ${response.status}`)
     },
@@ -664,9 +592,7 @@ const send = async () => {
       handleStreamError(err?.message)
       throw err
     },
-  }).catch(() => {
-    // errors handled in onerror
-  })
+  }).catch(() => {})
 }
 
 const newConversation = () => {
@@ -686,10 +612,9 @@ const newConversation = () => {
 const goBack = () => {
   history.length > 1 ? history.back() : null
 }
+
 const appendAssistantMessage = (text) => {
-  if (!text) {
-    return
-  }
+  if (!text) return
   const message = {
     id: createLocalId('assistant'),
     role: 'assistant',
@@ -708,9 +633,7 @@ const appendAssistantMessage = (text) => {
 }
 
 const handleToolCallEvent = (raw) => {
-  if (!raw) {
-    return
-  }
+  if (!raw) return
   let payload = null
   try {
     payload = typeof raw === 'string' ? JSON.parse(raw) : raw
@@ -718,9 +641,7 @@ const handleToolCallEvent = (raw) => {
     console.warn('Failed to parse tool call payload', error)
     return
   }
-  if (!payload || !payload.actionLogId) {
-    return
-  }
+  if (!payload || !payload.actionLogId) return
   const sanitized = typeof payload.sanitizedText === 'string' ? payload.sanitizedText : ''
   if (sanitized) {
     const lastAssistant = [...messages.value].reverse().find((m) => m.role === 'assistant')
@@ -745,30 +666,20 @@ const closeToolDialog = () => {
 }
 
 const formatDueAt = (value) => {
-  if (!value) {
-    return 'Any time'
-  }
+  if (!value) return 'Any time'
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
+  if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString()
 }
 
 const describeToolType = (type) => {
-  if (type === 'medication') {
-    return 'Medication'
-  }
-  if (type === 'activity') {
-    return 'Activity'
-  }
+  if (type === 'medication') return 'Medication'
+  if (type === 'activity') return 'Activity'
   return type || 'Task'
 }
 
 const confirmToolCall = async () => {
-  if (!pendingToolCall.value || toolSubmitting.value) {
-    return
-  }
+  if (!pendingToolCall.value || toolSubmitting.value) return
   toolSubmitting.value = true
   toolError.value = ''
   try {
@@ -777,16 +688,10 @@ const confirmToolCall = async () => {
       actionLogId: pendingToolCall.value.actionLogId,
     }
     const res = await proxy?.$cf?.chat?.executeTodoTool?.(body)
-    if (!res?.success) {
-      throw new Error(res?.message || 'Failed to add reminder')
-    }
+    if (!res?.success) throw new Error(res?.message || 'Failed to add reminder')
     const data = res.data || {}
-    if (data.assistantMessage) {
-      appendAssistantMessage(data.assistantMessage)
-    }
-    if (data.todo) {
-      uni.$emit?.('todo:created', data.todo)
-    }
+    if (data.assistantMessage) appendAssistantMessage(data.assistantMessage)
+    if (data.todo) uni.$emit?.('todo:created', data.todo)
     proxy?.$cf?.toast?.({ message: 'Added to your todo list', level: 'success' })
     closeToolDialog()
   } catch (error) {
@@ -797,9 +702,7 @@ const confirmToolCall = async () => {
 }
 
 const declineToolCall = async () => {
-  if (!pendingToolCall.value || toolSubmitting.value) {
-    return
-  }
+  if (!pendingToolCall.value || toolSubmitting.value) return
   toolSubmitting.value = true
   toolError.value = ''
   try {
@@ -809,13 +712,9 @@ const declineToolCall = async () => {
       reason: 'User declined',
     }
     const res = await proxy?.$cf?.chat?.declineTodoTool?.(body)
-    if (!res?.success) {
-      throw new Error(res?.message || 'Failed to notify assistant')
-    }
+    if (!res?.success) throw new Error(res?.message || 'Failed to notify assistant')
     const data = res.data || {}
-    if (data.assistantMessage) {
-      appendAssistantMessage(data.assistantMessage)
-    }
+    if (data.assistantMessage) appendAssistantMessage(data.assistantMessage)
     closeToolDialog()
   } catch (error) {
     toolError.value = error?.message || 'Failed to notify assistant'
@@ -823,7 +722,6 @@ const declineToolCall = async () => {
     toolSubmitting.value = false
   }
 }
-
 
 voiceBus.on('voice:error', (_id, _code, message) => {
   proxy?.$cf?.toast?.({ message, level: 'error' })
@@ -856,7 +754,6 @@ if (typeof window !== 'undefined') {
       isRecording.value = false
     }
     recognition.onend = () => {
-      //isRecording.value = false
       if (voiceMode.value) {
         recognition.start()
         isRecording.value = true
@@ -878,9 +775,6 @@ const toggleRecording = () => {
     voiceMode.value = false
     isRecording.value = false
     awaitingResponse = false
-    // if (typeof window !== 'undefined' && window.speechSynthesis) {
-    //   window.speechSynthesis.cancel()
-    // }
   } else {
     recognition.start()
     voiceMode.value = true
@@ -889,34 +783,16 @@ const toggleRecording = () => {
   }
 }
 
-// const speak = (text) => {
-//   if (!voiceMode.value || typeof window === 'undefined' || !window.speechSynthesis) return
-//   const utter = new SpeechSynthesisUtterance(text)
-//   utter.lang = 'zh-CN'
-//   utter.onend = () => {
-//     if (voiceMode.value && recognition) {
-//       recognition.start()
-//       isRecording.value = true
-//     }
-//   }
-//   window.speechSynthesis.cancel()
-//   window.speechSynthesis.speak(utter)
-// }
-
-
 watch(conversationId, (id) => {
-  if (typeof window === 'undefined') {
-    return
-  }
+  if (typeof window === 'undefined') return
   if (!id) {
     localStorage.removeItem(CONVERSATION_CACHE_KEY)
     conversationCache.value = null
     return
   }
   const existing = conversationCache.value
-  const createdAt = existing?.id === id && existing?.createdAt
-      ? existing.createdAt
-      : new Date().toISOString()
+  const createdAt =
+      existing?.id === id && existing?.createdAt ? existing.createdAt : new Date().toISOString()
   const payload = { id, createdAt }
   conversationCache.value = payload
   try {
@@ -925,6 +801,7 @@ watch(conversationId, (id) => {
     console.warn('Failed to persist conversation cache', error)
   }
 })
+
 onLoad(async (options) => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('chatMessages')
@@ -961,7 +838,6 @@ onLoad(async (options) => {
   }
 })
 
-//onBeforeUnmount(() => stopStream())
 onMounted(() => {
   nextTick(() => updateScrollAffordance())
   if (typeof window !== 'undefined') {
@@ -969,6 +845,7 @@ onMounted(() => {
     window.addEventListener('scroll', windowScrollHandler, { passive: true })
   }
 })
+
 onBeforeUnmount(() => {
   finalizeStream({ cancelled: true })
   stopStream()
@@ -984,7 +861,6 @@ voiceBus.on('voice:stopped', (id) => {
     awaitingResponse = false
   }
 })
-
 voiceBus.on('voice:ended', (id) => {
   if (voiceMode.value && id === currentUtteranceId) {
     awaitingResponse = false
@@ -993,307 +869,191 @@ voiceBus.on('voice:ended', (id) => {
 </script>
 
 <style scoped>
-:root {
-  color-scheme: light;
-}
-
-.chat-wrap {
-  height: 100vh;
+.chat-page {
   display: flex;
   flex-direction: column;
-  background: #F8F7F2;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  height: 100vh;
+  background: #f8f9f8;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+  "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
-/* 顶部栏 */
 .topbar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  display: grid;
+  grid-template-columns: 80rpx 1fr 80rpx;
+  align-items: center;          /* 让三列都居中 */
+  height: 112rpx;
+  background: #fff;
+  padding: 0 24rpx;
+}
+
+/* 包一层，用 flex 真正居中 */
+.back-wrap {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 20px 12px;
-  background: #F8F7F2;
+  align-items: center;          /* 垂直居中箭头 */
+  height: 100%;
 }
 
-.back-button {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(122, 143, 119, 0.16);
-  color: #7A8F77;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  cursor: pointer;
-  transition: background 0.2s ease;
+/* 箭头本身 */
+.back-icon {
+  font-size: 80rpx;             /* 不要 110rpx 太大就显得掉得更厉害 */
+  color: #2f3d2f;
+  line-height: 1;
+  transform: scaleX(0.75);      /* 瘦一点 */
+  transform-origin: left center;
+  padding: 0 8rpx;
+  /* 微调往上提一点点，让视觉更平 */
+  margin-top: -4rpx;
 }
-
-.back-button:focus-visible,
-.topbar-action:focus-visible,
-.icon-button:focus-visible {
-  outline: 2px solid rgba(122, 143, 119, 0.45);
-  outline-offset: 2px;
-}
-
-.back-button:active {
-  background: rgba(122, 143, 119, 0.28);
-}
-
-.topbar-title {
-  flex: 1;
+.title {
   text-align: center;
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  color: #2F3D2F;
+  font-size: 46rpx;
+  font-weight: 700;
+  color: #1d1d1d;
+}
+.right-spacer {
+  width: 80rpx;
 }
 
-.topbar-action {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(122, 143, 119, 0.16);
-  color: #7A8F77;
+
+/* 主体 */
+.chat-body {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s ease;
+  flex-direction: column;
+  overflow: hidden;
 }
-
-.topbar-action:active {
-  background: rgba(122, 143, 119, 0.28);
-}
-
-
-/* 消息列表 */
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px 160px;
-  background: transparent;
-}
-.scroll-to-bottom {
-  position: fixed;
-  right: 24px;
-  bottom: 120px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #7A8F77;
-  color: #fff;
-  box-shadow: 0 16px 32px rgba(122, 143, 119, 0.35);
-  cursor: pointer;
-  z-index: 12;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  padding: 30rpx 28rpx 180rpx;
 }
 
-.scroll-to-bottom:active,
-.scroll-to-bottom:focus-visible {
-  transform: translateY(1px);
-  box-shadow: 0 12px 24px rgba(122, 143, 119, 0.3);
-  outline: none;
-}
-
-.scroll-to-bottom svg {
-  pointer-events: none;
-}
-.history-loading {
-  text-align: center;
-  color: rgba(49, 65, 49, 0.6);
-  font-size: 14px;
-  margin: 12px 0;
-}
-
-
+/* 消息 */
 .message-row {
   display: flex;
-  gap: 12px;
-  margin: 12px 0;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
   align-items: flex-start;
 }
-
 .message-row.user {
   flex-direction: row-reverse;
 }
-
 .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 74rpx;
+  height: 74rpx;
+  border-radius: 999rpx;
   background: #fff;
-  border: 2px solid #fff;
-  box-shadow: 0 10px 24px rgba(122, 143, 119, 0.15);
   object-fit: cover;
+  box-shadow: 0 10rpx 26rpx rgba(0, 0, 0, 0.05);
 }
-
-.assistant-avatar {
-  align-self: flex-start;
-}
-
-.user-avatar {
-  align-self: flex-start;
-}
-
 .bubble {
   max-width: 78%;
-  padding: 16px 18px;
-  border-radius: 26px;
+  padding: 22rpx 26rpx;
+  border-radius: 32rpx;
+  box-shadow: 0 5rpx 16rpx rgba(0, 0, 0, 0.03);
+  line-height: 1.5;
+  font-size: 30rpx;
   word-break: break-word;
-  line-height: 1.6;
-  font-size: 16px;
-  font-weight: 500;
-  box-shadow: 0 18px 32px rgba(122, 143, 119, 0.16);
-  position: relative;
 }
-
+.assistant-bubble {
+  background: #e6efe1;
+  color: #314131;
+  border-top-left-radius: 16rpx;
+}
+.user-bubble {
+  background: #dde4d9;
+  color: #2f3d2f;
+  border-top-right-radius: 16rpx;
+}
 .bubble-text {
   white-space: pre-wrap;
-  color: inherit;
-  letter-spacing: 0.2px;
 }
-
-.assistant-bubble {
-  background: #E6EFE1;
-  color: #314131;
-  border-top-left-radius: 14px;
-}
-
-.assistant-bubble.is-streaming {
-  box-shadow: 0 20px 40px rgba(122, 143, 119, 0.22);
-}
-
-.assistant-bubble.is-error {
-  background: #F6E5E3;
-  color: #7F3C36;
-}
-
-.assistant-bubble .cursor {
+.cursor {
   display: inline-block;
-  width: 3px;
+  width: 4rpx;
   height: 1.2em;
-  background: #7A8F77;
-  margin-left: 6px;
+  background: #7a8f77;
+  margin-left: 6rpx;
   animation: blink 1s steps(2, start) infinite;
-  vertical-align: bottom;
 }
 
-.assistant-bubble .error-text {
-  margin-top: 10px;
-  font-size: 13px;
-  color: rgba(127, 60, 54, 0.85);
+/* 回到底部：圆角矩形 */
+.scroll-to-bottom {
+  position: fixed;
+  right: 28rpx;
+  bottom: 140rpx;
+  width: 120rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  border: none;
+  background: #7a8f77;
+  color: #fff;
+  font-size: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14rpx 28rpx rgba(122, 143, 119, 0.28);
+  z-index: 20;
 }
 
-.user-bubble {
-  background: #DDE4D9;
-  color: #2F3D2F;
-  border-top-right-radius: 14px;
-}
-
-@keyframes blink {
-  0%, 49% {
-    opacity: 1;
-  }
-  50%, 100% {
-    opacity: 0;
-  }
-}
-
-
-
+/* 底部输入 */
 .composer {
   position: sticky;
   bottom: 0;
-  padding: 0 20px 28px;
-  background: linear-gradient(180deg, rgba(248, 247, 242, 0), #F8F7F2 45%, #F8F7F2 100%);
-  backdrop-filter: blur(8px);
+  padding: 0 22rpx 32rpx;
+  background: linear-gradient(180deg, rgba(248, 249, 248, 0), #f8f9f8 55%, #f8f9f8 100%);
+  z-index: 20;
 }
-
 .composer-surface {
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: #ffffff;
-  border-radius: 32px;
-  padding: 14px 18px;
-  box-shadow: 0 22px 46px rgba(122, 143, 119, 0.22);
+  gap: 16rpx;
+  background: #fff;
+  border-radius: 26rpx;
+  padding: 14rpx 18rpx;
+  box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.04);
 }
-
 .composer-input {
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 16px;
-  color: #314131;
-  line-height: 1.6;
-  min-height: 24px;
+  font-size: 30rpx;
   outline: none;
+  color: #314131;
 }
-
-.composer-input:disabled {
-  color: rgba(49, 65, 49, 0.4);
-}
-
 .composer-input::placeholder {
-  color: rgba(49, 65, 49, 0.45);
+  color: rgba(49, 65, 49, 0.5);
 }
-
 .icon-button {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+  min-width: 120rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
   border: none;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  background: rgba(122, 143, 119, 0.12);
-  color: #7A8F77;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  font-size: 32rpx;
+  transition: background 0.15s ease;
 }
-
-.icon-button svg {
-  pointer-events: none;
-}
-
-.icon-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.icon-button:active {
-  background: rgba(122, 143, 119, 0.24);
-}
-
-.icon-button.active {
-  background: rgba(122, 143, 119, 0.28);
-}
-
 .mic-button {
   background: rgba(122, 143, 119, 0.12);
+  color: #7a8f77;
 }
-
-.send-action {
-  background: #7A8F77;
+.mic-button.active {
+  background: rgba(122, 143, 119, 0.3);
+}
+.send-button {
+  background: #7a8f77;
   color: #fff;
-  box-shadow: 0 12px 24px rgba(122, 143, 119, 0.4);
+  box-shadow: 0 14rpx 28rpx rgba(122, 143, 119, 0.35);
 }
-
-.send-action:disabled {
+.send-button:disabled {
   background: rgba(122, 143, 119, 0.5);
   box-shadow: none;
 }
+
+/* tool 弹窗保持你原本的风格 */
 .tool-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1304,12 +1064,11 @@ voiceBus.on('voice:ended', (id) => {
   padding: 40rpx;
   z-index: 40;
 }
-
 .tool-modal {
   position: relative;
   width: 100%;
   max-width: 660rpx;
-  background: #F8F7F2;
+  background: #f8f7f2;
   border-radius: 32rpx;
   padding: 48rpx 36rpx;
   box-shadow: 0 26rpx 56rpx rgba(122, 143, 119, 0.28);
@@ -1317,9 +1076,8 @@ voiceBus.on('voice:ended', (id) => {
   display: flex;
   flex-direction: column;
   gap: 28rpx;
-  color: #2F3D2F;
+  color: #2f3d2f;
 }
-
 .modal-close {
   position: absolute;
   top: 24rpx;
@@ -1330,75 +1088,49 @@ voiceBus.on('voice:ended', (id) => {
   height: 48rpx;
   border-radius: 50%;
   font-size: 34rpx;
-  color: #7A8F77;
-  cursor: pointer;
-  line-height: 1;
+  color: #7a8f77;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, color 0.2s ease;
 }
-
-.modal-close:active,
-.modal-close:focus-visible {
-  background: rgba(122, 143, 119, 0.24);
-  color: #2F3D2F;
-}
-
 .modal-title {
   font-size: 40rpx;
   font-weight: 700;
-  color: #2F3D2F;
   text-align: center;
 }
-
 .modal-summary {
   background: rgba(230, 239, 225, 0.65);
   border-radius: 24rpx;
   padding: 24rpx;
   border: 1px solid rgba(122, 143, 119, 0.2);
 }
-
 .modal-summary-text {
   font-size: 30rpx;
-  color: #314131;
   line-height: 1.6;
 }
-
 .modal-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
   gap: 24rpx;
 }
-
 .modal-label {
   font-size: 28rpx;
   color: rgba(49, 65, 49, 0.7);
   font-weight: 600;
   min-width: 120rpx;
 }
-
 .modal-value {
   font-size: 30rpx;
-  color: #2F3D2F;
+  color: #2f3d2f;
   text-align: right;
   flex: 1;
   line-height: 1.5;
 }
-
-.modal-error {
-  color: #B03A3A;
-  font-size: 28rpx;
-  text-align: center;
-}
-
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 24rpx;
 }
-
 .modal-btn {
   border: none;
   border-radius: 999rpx;
@@ -1406,34 +1138,22 @@ voiceBus.on('voice:ended', (id) => {
   font-size: 30rpx;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
-
 .modal-btn.primary {
-  background: #7A8F77;
+  background: #7a8f77;
   color: #fff;
-  box-shadow: 0 16rpx 28rpx rgba(122, 143, 119, 0.35);
 }
-
-.modal-btn.primary:active {
-  transform: translateY(2rpx);
-  box-shadow: 0 10rpx 20rpx rgba(122, 143, 119, 0.3);
-}
-
 .modal-btn.secondary {
   background: rgba(122, 143, 119, 0.14);
-  color: #2F3D2F;
+  color: #2f3d2f;
+}
+.modal-error {
+  color: #b03a3a;
+  text-align: center;
 }
 
-.modal-btn.secondary:active {
-  background: rgba(122, 143, 119, 0.24);
-}
-
-.modal-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  box-shadow: none;
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
 }
 </style>
-<script setup>
-</script>

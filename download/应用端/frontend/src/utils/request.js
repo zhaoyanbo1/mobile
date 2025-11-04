@@ -1,165 +1,81 @@
-// #ifdef MP-WEIXIN || APP-PLUS || APP-HARMONY
-import home_page_name from "../api/config/home_condfig";
-let baseurl = import.meta.env.VITE_APP_SERVICE_API;
-// #endif
-
-// #ifdef H5
-let baseurl = import.meta.env.VITE_APP_BASE_API;
-// #endif
-
-// #ifdef H5
+// src/utils/request.js
 import axios from 'axios';
 
-/** 🔒 安全提示函数：跨端兼容 toast / 控制台 / ElMessage */
-function safeMsg(type, msg) {
-    if (typeof uni !== 'undefined' && uni.showToast) {
-        uni.showToast({
-            title: String(msg || ''),
-            icon: type === 'error' ? 'error' : 'none',
-            duration: 2000
-        });
-        return;
-    }
-    if (typeof window !== 'undefined' && window.ElMessage) {
-        window.ElMessage[type] ? window.ElMessage[type](msg) : window.ElMessage(msg);
-        return;
-    }
-    console[type === 'error' ? 'error' : 'log'](msg);
+/** 读取环境变量（兼容多端 & 运行时覆盖） */
+function readEnv() {
+    const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+    // 运行时覆盖（可在控制台或入口处注入）
+    const runtimeWin = (typeof window !== 'undefined' ? window.__BASE_API__ : '');
+    const runtimeLS  = (typeof localStorage !== 'undefined' ? localStorage.getItem('BASE_API') : '');
+
+    return {
+        base: env.VITE_APP_BASE_API || env.VITE_BASE_API || env.VITE_API_BASE || '',
+        svc:  env.VITE_APP_SERVICE_API || env.VITE_SERVICE_API || '',
+        rt:   runtimeWin || runtimeLS || '',
+    };
 }
 
-// 创建 axios 实例
-const service = axios.create({
-    baseURL: baseurl,
-    timeout: 50000,
-    headers: {
-        'Content-Type': 'application/json;charset=utf-8',
-        APP_ID: import.meta.env.VITE_APP_ID,
-        APP_TYPE: import.meta.env.VITE_APP_TYPE
+/** 规范化：去掉末尾多余斜杠 */
+function stripEndSlash(s) {
+    return s.replace(/\/+$/, '');
+}
+
+/** 解析后端基地址：
+ *  优先顺序：运行时覆盖(__BASE_API__/localStorage) > VITE_APP_BASE_API(全量) > VITE_APP_SERVICE_API + '/api' > location.origin + '/api' > 固定回退
+ */
+function resolveBase() {
+    const { base, svc, rt } = readEnv();
+
+    // 1) 运行时覆盖：window.__BASE_API__ 或 localStorage.BASE_API
+    if (rt && /^https?:\/\//i.test(rt)) return stripEndSlash(rt);
+
+    // 2) .env 的全量 BASE（推荐直接写成 http://host:port/api）
+    if (base && /^https?:\/\//i.test(base)) return stripEndSlash(base);
+
+    // 3) .env 的 SERVICE（裸 host），自动拼 '/api'
+    if (svc && /^https?:\/\//i.test(svc)) return stripEndSlash(svc) + '/api';
+
+    // 4) H5 回落到本域 /api
+    if (typeof location !== 'undefined' && location.origin) {
+        return stripEndSlash(location.origin) + '/api';
     }
+
+    // 5) 最终兜底
+    return 'http://40.82.192.142/api';
+}
+
+const BASE_URL = resolveBase();
+console.log('[REQ] baseURL =', BASE_URL);
+
+/** 创建统一 axios 实例 */
+const service = axios.create({
+    baseURL: BASE_URL,
+    timeout: 15000,
+    headers: { 'Content-Type': 'application/json;charset=utf-8' }
 });
 
-const useLogin = import.meta.env.VITE_USE_LOGIN === 'true';
+/** 请求拦截：统一 Token / X-User-Id；并把以 “/” 开头的 url 规范化成相对路径，避免覆盖 baseURL 的路径段 */
+service.interceptors.request.use(cfg => {
+    const token = (typeof uni !== 'undefined' && (uni.getStorageSync('token') || uni.getStorageSync('h5_token'))) || '';
+    const me    = (typeof uni !== 'undefined' && uni.getStorageSync('me')) || null;
 
-// 请求拦截器
-service.interceptors.request.use(
-    (config) => {
-        if (!config.headers) throw new Error(`Expected 'config' and 'config.headers' not to be undefined`);
-        try {
-            if (uni.getStorageSync("h5_token")) {
-                config.headers.Authorization = 'Bearer ' + uni.getStorageSync("h5_token");
-            }
-        } catch (e) {
-            console.log(e);
-        }
-        config.headers.APP_ID = import.meta.env.VITE_APP_ID;
-        config.headers.APP_TYPE = import.meta.env.VITE_APP_TYPE;
-        config.headers.X_Env = import.meta.env.VITE_APP_ENV;
+    cfg.headers = cfg.headers || {};
+    if (token) cfg.headers.Authorization = `Bearer ${token}`;
+    const uid = me?.userId || me?.user_info_id || (typeof uni !== 'undefined' && uni.getStorageSync('uid'));
+    if (uid) cfg.headers['X-User-Id'] = String(uid);
 
-        const uid = uni.getStorageSync('uid');
-        if (uid) config.headers['X-User-Id'] = String(uid);
-
-
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
-
-// 响应拦截器
-service.interceptors.response.use(
-    (response) => {
-        const res = response.data;
-        const {code, message} = res;
-        if (code == null || code == undefined) {
-            return res;
-        }
-        if (code === 0) {
-            return res;
-        } else {
-            if (code === 401 || code === 403) {
-                uni.removeStorageSync("h5_token");
-                location.href =
-                    import.meta.env.VITE_BASE;
-            } else {
-                uni.showToast({
-                    title: message || '系统出错',
-                    icon: "none"
-                })
-                // ElMessage({
-                //     message: message || '系统出错',
-                //     type: 'error',
-                //     duration: 5 * 1000,
-                // });
-                uni.showToast({
-                    title: message || '系统出错',
-                    icon: "none"
-                })
-
-            }
-            return  Promise.reject(new Error(message || 'Error'));
-        }
-    },
-    (error) => {
-        console.log('请求异常：', error);
-        if (error?.response?.status === 401) {
-            uni.removeStorageSync("h5_token");
-            location.href = import.meta.env.VITE_BASE;
-        } else {
-            safeMsg('error', '网络异常，请稍后再试!');
-            return Promise.reject(new Error('Error'));
-        }
+    // ⚠️关键：把 "/xxx" 改为 "xxx"，避免某些环境把 "/xxx" 当成“覆盖路径”处理
+    if (typeof cfg.url === 'string' && cfg.url.startsWith('/')) {
+        cfg.url = cfg.url.replace(/^\/+/, '');
     }
+
+    return cfg;
+});
+
+/** 响应拦截：直接返回 data */
+service.interceptors.response.use(
+    res => res.data,
+    err => Promise.reject(err)
 );
 
 export default service;
-// #endif
-
-
-// #ifdef MP-WEIXIN || APP-PLUS || APP-HARMONY
-let service = (res) => {
-    console.log("加载中", res);
-    uni.showLoading({ title: '加载中' });
-
-    let { url, data, method, token } = res;
-    token = uni.getStorageSync("h5_token");
-
-    return new Promise((resolve, reject) => {
-        uni.request({
-            url: baseurl + url,
-            data,
-            method,
-            timeout: 18000,
-            header: {
-                'content-type': 'application/json',
-                Authorization: 'Bearer ' + token,
-                APP_ID: import.meta.env.VITE_APP_ID,
-                APP_TYPE: import.meta.env.VITE_APP_TYPE,
-                X_Env: import.meta.env.VITE_APP_ENV
-            },
-            success(res) {
-                if (res.data.code === 401) {
-                    setTimeout(() => {
-                        uni.navigateTo({ url: `/pages/${home_page_name}/index` });
-                        uni.removeStorage({ key: 'h5_token' });
-                    }, 800);
-                } else if (res.data.code !== 0 && res.data.code !== undefined) {
-                    uni.showToast({ title: res.data.message || '系统出错', icon: "none" });
-                } else {
-                    resolve(res.data);
-                }
-            },
-            fail(err) {
-                reject(err);
-                console.log(err);
-                if (err.errMsg === "request:fail timeout") {
-                    uni.showToast({ title: "当前网络状态不佳请刷新重试", icon: "none" });
-                }
-            },
-            complete() {
-                uni.hideLoading();
-            }
-        });
-    });
-};
-
-export default service;
-// #endif
