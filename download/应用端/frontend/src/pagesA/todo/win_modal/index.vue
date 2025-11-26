@@ -36,6 +36,7 @@ const { proxy } = getCurrentInstance()
 /** Config */
 const API_BASE = import.meta.env.VITE_APP_SERVICE_API
 const COLLECT_URL = '/api/user-medals'
+const day = new Date().getDate()
 const DEFAULT_MEDAL_ID = 1000 + day;            // Matches backend
 const DEFAULT_MEDAL_NAME = 'Daily Five' // Default name
 const DEFAULT_ICON = defaultMedalIcon

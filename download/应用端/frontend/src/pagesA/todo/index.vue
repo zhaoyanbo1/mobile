@@ -8,7 +8,7 @@
     </view>
 
     <div class="flex flex-col px-6 pt-16 pb-28 min-h-screen bg-[#F8F9F8] relative">
-      <!-- ===== 顶部标题 + 宝箱按钮 ===== -->
+      <!-- ===== Top title + chest button ===== -->
       <div class="flex items-center justify-between mb-8">
         <h2 class="text-3xl font-extrabold text-[#1D1D1D] tracking-tight">
           Today's Tasks
@@ -25,7 +25,7 @@
         </button>
       </div>
 
-      <!-- ===== 今日进度条 ===== -->
+      <!-- ===== Today's progress bar ===== -->
       <div class="bg-white/90 backdrop-blur-sm rounded-3xl p-6 mb-8 shadow-lg">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-lg font-semibold text-[#1D1D1D]">Today's Progress</h3>
@@ -40,7 +40,7 @@
         </div>
       </div>
 
-      <!-- ===== 系统任务 ===== -->
+      <!-- ===== System tasks ===== -->
       <section class="mb-8">
         <h4 class="mb-3 text-[#7E8C77] font-semibold text-base">
           System Tasks (1 pt each)
@@ -83,7 +83,7 @@
         </div>
       </section>
 
-      <!-- ===== Bonus 任务 ===== -->
+      <!-- ===== Bonus tasks ===== -->
       <section class="mb-8">
         <h4 class="mb-3 text-[#7E8C77] font-semibold text-base">
           Bonus Tasks (2 pts each)
@@ -126,12 +126,14 @@
         </div>
       </section>
 
-      <!-- ===== 自定义任务 ===== -->
+      <!-- ===== Custom tasks ===== -->
       <section>
         <h4 class="mb-3 text-[#7E8C77] font-semibold text-base">
           Custom Tasks (0.5 pt each)
         </h4>
-        <div v-if="loading" class="text-center text-gray-400 py-4">Loading...</div>
+        <div v-if="loading" class="text-center text-gray-400 py-4">
+          Loading...
+        </div>
         <div v-else-if="customTasks.length === 0" class="text-center text-gray-400 py-4">
           No tasks for today.
         </div>
@@ -158,7 +160,7 @@
         </div>
       </section>
 
-      <!-- ===== 勋章墙按钮 ===== -->
+      <!-- ===== Medal wall button ===== -->
       <div
           class="mt-10 bg-white rounded-3xl p-6 text-[#1D1D1D]
                shadow-[0_6px_16px_rgba(0,0,0,0.08)]
@@ -179,7 +181,7 @@
         </div>
       </div>
 
-      <!-- ===== 悬浮“添加”按钮 ===== -->
+      <!-- ===== Floating “Add” button ===== -->
       <button
           class="fixed bottom-20 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#A3B18A] to-[#7E8C77]
                text-white text-3xl font-bold shadow-lg hover:scale-110 active:scale-95
@@ -189,7 +191,7 @@
         +
       </button>
 
-      <!-- ✅ 测试按钮已删除 -->
+      <!-- ✅ test button removed -->
     </div>
   </base-layout>
 </template>
@@ -201,8 +203,8 @@ import { LocalNotifications } from '@capacitor/local-notifications'
 
 const { proxy } = getCurrentInstance()
 
-/* ===== 通知相关 ===== */
-const NOON_NOTICE_ID = 888000  // 中午那条固定 id
+/* ===== Notification related ===== */
+const NOON_NOTICE_ID = 888000  // fixed id for the noon reminder
 
 async function ensureNotifPermission() {
   try {
@@ -276,7 +278,7 @@ async function handleTaskToggled(row: any) {
   }
 }
 
-// 每天中午 12:00 的提醒
+// daily 12:00 PM reminder
 async function scheduleDailyNoonNotice() {
   await ensureNotifPermission()
 
@@ -288,14 +290,14 @@ async function scheduleDailyNoonNotice() {
   }
 
   try {
-    // 避免重复，先取消
+    // avoid duplicate
     await LocalNotifications.cancel({ notifications: [{ id: NOON_NOTICE_ID }] })
     await LocalNotifications.schedule({
       notifications: [
         {
           id: NOON_NOTICE_ID,
           title: 'Daily Tasks',
-          body: '记得完成今天的系统任务和 Bonus 任务～',
+          body: 'Don’t forget to finish today’s system tasks and bonus tasks!',
           schedule: { at: noon },
           channelId: 'todo-reminders',
           smallIcon: 'ic_stat_icon'
@@ -316,11 +318,11 @@ async function initNotificationChannel() {
       importance: 4,
     })
   } catch (e) {
-    // iOS / web 忽略
+    // ignore for iOS / web
   }
 }
 
-/* ===== 数据区 ===== */
+/* ===== Data ===== */
 const reminders = ref<any[]>([])
 const loading = ref(false)
 const generatingAi = ref(false)
@@ -359,7 +361,8 @@ async function fetchReminders() {
     loading.value = false
   }
 
-  // 进页面后：清空 -> 对所有今天未完成的任务排通知 -> 再排中午的提醒
+  // after entering the page:
+  // clear -> schedule notifications for all unfinished tasks today -> schedule the noon reminder
   try {
     await cancelAllPending()
     await scheduleForUnfinished(reminders.value)
@@ -499,7 +502,7 @@ async function runAiGeneration(mode: GenerationMode) {
 function generateAiTodos() { return runAiGeneration('regular') }
 function generateAiBonusTodos() { return runAiGeneration('bonus') }
 
-/* 积分逻辑 */
+/* Points logic */
 const totalPoints = computed(() =>
     [...highPriorityTasks.value, ...bonusTasks.value, ...customTasks.value]
         .filter(t => t.completed)
@@ -510,19 +513,19 @@ const progressPercent = computed(() => Math.min(100, (totalPoints.value / TARGET
 const unlockReady = computed(() => totalPoints.value >= TARGET_POINTS)
 const doneLabel = computed(() => `${totalPoints.value} / ${TARGET_POINTS} pts`)
 
-/* 宝箱逻辑 */
+/* Chest logic */
 async function onChestClick() {
   if (!unlockReady.value) return goShowModel()
   try {
     await addMedalRecord()
   } catch (e) {
-    console.error('添加奖牌失败：', e)
+    console.error('Failed to add medal:', e)
   } finally {
     goWinModel()
   }
 }
 
-/* 添加奖章 */
+/* Add medal */
 async function addMedalRecord() {
   const userRes = await proxy.$cf.login.getLoginUser()
   if (!userRes?.success) return
@@ -535,7 +538,7 @@ async function addMedalRecord() {
   await proxy.$cf.table.insert({ table_name: 'medal_wall', param: medalData })
 }
 
-/* 页面跳转 */
+/* Navigation */
 function goAddTask() {
   const url = '/pagesA/todo/add_task/index'
   // @ts-ignore

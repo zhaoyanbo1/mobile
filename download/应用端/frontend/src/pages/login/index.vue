@@ -1,10 +1,9 @@
 <template>
   <base-layout>
-    <!-- Theme wrapper -->
     <view
         class="theme-health min-h-screen flex flex-col items-center justify-center bg-[linear-gradient(180deg,_#FAFAF8_0%,_#FFFFFF_60%)] p-6"
     >
-      <!-- App Logo / Title -->
+      <!-- 标题 -->
       <view class="mb-10 flex flex-col items-center">
         <text class="text-[28px] leading-tight font-extrabold text-neutral-900 tracking-[0.2px]">
           Health Care
@@ -14,7 +13,7 @@
         </text>
       </view>
 
-      <!-- Login Card -->
+      <!-- 登录卡片（正常登录还是去 chat） -->
       <view
           class="login-shell w-full max-w-[420px] bg-white rounded-[20px] shadow-soft p-6 mb-8 border border-[var(--card-border)]"
       >
@@ -32,7 +31,6 @@
                   role="button"
                   tabindex="0"
                   class="w-full rounded-full h-[48px] leading-[48px] border border-[var(--brand-sage-600)] text-center font-semibold text-[18px] text-[var(--brand-sage-700)] active:scale-[0.99] bg-white"
-                  aria-label="Open sign-up modal"
                   @click="showRegisterPopup"
               >
                 Sign up
@@ -42,7 +40,7 @@
         </base-login>
       </view>
 
-      <!-- Sign-up Modal -->
+      <!-- 注册弹窗 -->
       <uni-popup ref="registerPopup" type="center" :mask-click="true">
         <view
             class="modal-card bg-white rounded-[18px] w-[92vw] max-w-[420px] shadow-soft border border-[var(--card-border)]"
@@ -53,6 +51,7 @@
 
           <view class="modal-scroll px-6 py-4">
             <uni-forms :modelValue="registerForm" label-position="top" class="form-styled">
+              <!-- 保持你当前的字段写法：phone_number 是手机号，username 是用户名 -->
               <uni-forms-item required label="Phone Number" name="phone_number">
                 <uni-easyinput
                     type="text"
@@ -117,7 +116,6 @@
                 </checkbox-group>
               </view>
 
-              <!-- 创建账号按钮 -->
               <button
                   type="button"
                   class="w-full rounded-full h-[48px] mt-2 font-semibold text-[16px] text-white bg-[var(--brand-sage-600)] active:scale-[0.99] shadow-press"
@@ -128,6 +126,24 @@
               </button>
             </uni-forms>
           </view>
+        </view>
+      </uni-popup>
+
+      <!-- 注册成功提示弹窗：只有一个确定 -->
+      <uni-popup ref="successPopup" type="center" :mask-click="false">
+        <view class="bg-white rounded-[16px] w-[78vw] max-w-[340px] p-6 text-center">
+          <text class="text-[18px] font-bold text-[#3F6D5A]">
+            Registration successful
+          </text>
+          <text class="block mt-2 text-[14px] text-gray-500">
+            Click OK to complete login.
+          </text>
+          <button
+              class="w-full h-[42px] mt-5 rounded-full bg-[#6FA08F] text-white text-[15px] font-semibold"
+              @click="loginAfterRegister"
+          >
+            OK
+          </button>
         </view>
       </uni-popup>
     </view>
@@ -142,13 +158,7 @@ const { proxy } = getCurrentInstance()
 
 const todayStr = ref(new Date().toISOString().slice(0, 10))
 
-/* 同意条款 */
 const agree = ref(false)
-const onAgreeChange = (e) => {
-  agree.value = Array.isArray(e.detail?.value) && e.detail.value.includes('agree')
-}
-
-/* 注册表单 */
 const registerForm = ref({
   phone_number: '',
   username: '',
@@ -159,36 +169,44 @@ const registerForm = ref({
   emergency_contact: ''
 })
 
-/* 弹窗 */
 const registerPopup = ref(null)
+const successPopup = ref(null)
+
+// 记录注册时填的账号，弹窗点 OK 用它去登录
+const lastRegister = ref({
+  phone_number: '',
+  username: '',
+  password: ''
+})
+
+const onAgreeChange = (e) => {
+  agree.value = Array.isArray(e.detail?.value) && e.detail.value.includes('agree')
+}
+
 const showRegisterPopup = () => registerPopup.value?.open()
 
-/** 把所有可能的登录痕迹清掉 */
+// 进页面清一下旧登录
 async function clearResidualAuth () {
   try {
     uni.removeStorageSync('token')
+    uni.removeStorageSync('h5_token')
     uni.removeStorageSync('me')
     uni.removeStorageSync('user')
     uni.removeStorageSync('uid')
-    uni.removeStorageSync('h5_token')
   } catch (e) {}
-
-  try {
-    await proxy?.$cf?.globalVariable?.write?.({ variableName: 'h5_token', value: '' })
-  } catch (e) {}
-  try {
-    await proxy?.$cf?.globalVariable?.write?.({ variableName: 'currentUser', value: '' })
-  } catch (e) {}
+  try { await proxy?.$cf?.globalVariable?.write?.({ variableName: 'h5_token', value: '' }) } catch (e) {}
+  try { await proxy?.$cf?.globalVariable?.write?.({ variableName: 'currentUser', value: '' }) } catch (e) {}
 }
 
 onShow(async () => {
-  // 回到登录页先清一次
   await clearResidualAuth()
 })
 
-/* ✅ 登录成功逻辑（放宽判断）：能拿到用户就算成功 */
-const handleLoginSuccess = async (payload) => {
-  // 1. 尽量多渠道拿 token
+/**
+ * 公共：把 token 和 user 存起来（不跳）
+ */
+const loginSuccessCommon = async (payload) => {
+  // token 多路取
   let token =
       payload?.token ||
       payload?.data?.token ||
@@ -196,59 +214,43 @@ const handleLoginSuccess = async (payload) => {
       payload?.data?.accessToken ||
       ''
 
-  // 有些组件登录成功后直接写本地，不在 payload 里
   if (!token) {
     const localToken = uni.getStorageSync('token') || uni.getStorageSync('h5_token')
     if (localToken) token = localToken
   }
   if (!token) {
-    // 再从全局变量兜底
     try {
       const t = await proxy?.$cf?.globalVariable?.read?.({ variableName: 'h5_token' })
       token = t?.data || ''
     } catch (e) {}
   }
 
-  // 2. 尽量拿用户信息
-  let me =
-      payload?.user ||
-      payload?.data?.user ||
-      null
-
-  // 不在 payload 里，就调一次后端的“我是谁”
+  // 用户多路取
+  let me = payload?.user || payload?.data?.user || null
   if (!me) {
     try {
       const resp = await proxy?.$cf?.login?.getLoginUser?.()
-      if (resp?.success) {
-        me = resp.data
-      }
+      if (resp?.success) me = resp.data
     } catch (e) {}
   }
 
-  // 3. 把 uid 抽出来
   const uid = me?.user_info_id ?? me?.id ?? me?.userId ?? me?.uid ?? null
-
-  // 🚩 改这里：只要拿到了“用户(id)”就算登录成功，
-  // token 没拿到也别直接提示“invalid”，先把能存的都存起来
   if (!uid) {
-    // 真是没拿到用户，这才当作失败
     await clearResidualAuth()
-    proxy?.$cf?.toast?.({
-      message: 'Login info invalid, please login again.',
-      level: 'error'
-    })
-    return
+    proxy?.$cf?.toast?.({ message: 'Login info invalid, please login again.', level: 'error' })
+    return false
   }
 
-  // 4. 能拿到就往本地里写
+  // 存 token
   if (token) {
     uni.setStorageSync('token', token)
-    // 顺手写回全局，方便其他页面用
+    uni.setStorageSync('h5_token', token)
     try {
       await proxy?.$cf?.globalVariable?.write?.({ variableName: 'h5_token', value: token })
     } catch (e) {}
   }
 
+  // 存用户
   uni.setStorageSync('me', me)
   uni.setStorageSync('user', {
     userId: uid,
@@ -260,20 +262,23 @@ const handleLoginSuccess = async (payload) => {
   })
   uni.setStorageSync('uid', String(uid))
 
-  // 也把 currentUser 写掉，避免你后面页面读不到
   try {
     await proxy?.$cf?.globalVariable?.write?.({ variableName: 'currentUser', value: me })
   } catch (e) {}
 
-  proxy?.$cf?.toast?.({ message: 'Login successful', level: 'success', duration: 1200 })
-
-  // 5. 真正跳转
-  setTimeout(() => {
-    proxy.$cf.navigate.to({ url: '/pages/chat/index', type: 'page' })
-  }, 1200)
+  return true
 }
 
-/* 登录失败 */
+/**
+ * 登录组件用的成功：正常登录还是去 chat
+ */
+const handleLoginSuccess = async (payload) => {
+  const ok = await loginSuccessCommon(payload)
+  if (!ok) return
+  proxy?.$cf?.toast?.({ message: 'Login successful', level: 'success', duration: 900 })
+  proxy.$cf.navigate.to({ url: '/pages/chat/index', type: 'page' })
+}
+
 const handleLoginFail = () => {
   proxy?.$cf?.toast?.({
     message: 'Login failed. Please check your credentials.',
@@ -281,7 +286,9 @@ const handleLoginFail = () => {
   })
 }
 
-/* 注册并自动登录（保持你原来的逻辑） */
+/**
+ * 注册：只注册，成功后弹“成功”框
+ */
 const handleRegister = async () => {
   if (!agree.value) {
     proxy.$cf.toast({ message: 'Please agree to Terms & Privacy first.', level: 'error' })
@@ -303,40 +310,76 @@ const handleRegister = async () => {
       return
     }
 
-    const doLogin = async (account) => {
-      return await proxy.$cf.login.loginPasswd({
-        phone: account,
-        password,
-        relevanceTable: 'user_info'
-      })
-    }
-
-    let loginRes
-    try { loginRes = await doLogin(phone_number) } catch {}
-    if (!loginRes) { try { loginRes = await doLogin(username) } catch {} }
-
-    if (!loginRes || !loginRes.data) {
-      proxy.$cf.toast({ message: 'Auto login failed after registration', level: 'error' })
-      return
-    }
-
-    await proxy.$cf.globalVariable.write({ variableName: 'h5_token', value: loginRes.data })
-    try {
-      const me = await proxy.$cf.login.getLoginUser()
-      await proxy.$cf.globalVariable.write({ variableName: 'currentUser', value: me?.data })
-    } catch {}
+    // 记录注册用的账号密码
+    lastRegister.value = { phone_number, username, password }
 
     registerPopup.value?.close()
-    proxy.$cf.toast({ message: 'Registration successful', level: 'success', duration: 900 })
-    setTimeout(() => {
-      proxy.$cf.navigate.to({ url: '/pagesA/care/questionare/index', type: 'page' })
-    }, 600)
+    successPopup.value?.open()
   } catch (e) {
     proxy.$cf.toast({ message: 'Registration failed', level: 'error' })
   }
 }
-</script>
 
+/**
+ * 弹窗里点确定：调 /api/login/passwd，把 data 当 token 存起来，然后去问卷
+ */
+const loginAfterRegister = async () => {
+  const { phone_number, username, password } = lastRegister.value
+  if (!username && !phone_number) {
+    successPopup.value?.close()
+    return
+  }
+
+  // 你的平台登录接口
+  const tryLogin = async (account) => {
+    return await proxy.$cf.login.loginPasswd({
+      phone: account,
+      password,
+      relevanceTable: 'user_info'
+    })
+  }
+
+  let loginRes = null
+  // 先试用户名
+  try { loginRes = await tryLogin(phone_number) } catch (e) {}
+  // 再试手机号
+  if (!loginRes) {
+    try { loginRes = await tryLogin(username) } catch (e) {}
+  }
+
+  if (!loginRes || !loginRes.data) {
+    proxy.$cf.toast({ message: 'Login after register failed, please login manually.', level: 'error' })
+    successPopup.value?.close()
+    return
+  }
+
+  // ⭐ 这步很关键：你的后端把 token 放在 data 里，我们直接拿出来存
+  const rawData = loginRes.data
+  const token = typeof rawData === 'string'
+      ? rawData
+      : (rawData?.token || '')
+
+  if (token) {
+    // 存到本地
+    uni.setStorageSync('token', token)
+    uni.setStorageSync('h5_token', token)
+    // 存到全局变量，给后面 http://40.82.192.142/api/getUserInfo 用
+    try {
+      await proxy?.$cf?.globalVariable?.write?.({ variableName: 'h5_token', value: token })
+    } catch (e) {}
+  }
+
+  // 顺便用现有公共逻辑把用户再写一遍（如果后端这次返回了用户的话）
+  try {
+    await loginSuccessCommon(loginRes)
+  } catch (e) {}
+
+  successPopup.value?.close()
+
+  // ✅ 注册流程最后只去问卷页
+  proxy.$cf.navigate.to({ url: '/pagesA/care/questionare/index', type: 'page' })
+}
+</script>
 
 <style scoped>
 .theme-health{
@@ -361,6 +404,7 @@ const handleRegister = async () => {
 
 :deep(.uni-forms){ --label-color:#3F3F46; }
 :deep(.uni-forms .uni-forms-item__label){ font-weight:700; font-size:14px; color:var(--label-color); }
+
 :deep(.uni-easyinput__content),
 :deep(.uni-easyinput__content-input),
 :deep(.uni-easyinput__placeholder-class){
@@ -368,7 +412,8 @@ const handleRegister = async () => {
 }
 :deep(.uni-easyinput__content){ border:1px solid #E7E7E7 !important; padding:2px 10px !important; }
 :deep(.uni-easyinput__content-input){ height:44px !important; font-size:16px !important; color:#111827 !important; }
-:deep(.uni-easyinput__placeholder-class), :deep(.uni-input-placeholder){ font-size:15px !important; color:#9CA3AF !important; }
+:deep(.uni-easyinput__placeholder-class),
+:deep(.uni-input-placeholder){ font-size:15px !important; color:#9CA3AF !important; }
 
 :deep(.uni-datetime-picker){
   --bd:#E7E7E7; display:block; border:1px solid var(--bd);

@@ -70,17 +70,19 @@ public class LoginEventListener {
             login.setPassword(SecurityUtils.encryptPassword("1234456"));
         }
         Object userName = WrapperFactory.getValueByKeys(data, usernameKeys);
-        if (Objects.nonNull(userName)) {
-            login.setUserName(String.valueOf(userName));
-            login.setPhoneNumber(String.valueOf(userName));
-        } else {
-            Object phone = WrapperFactory.getValueByKeys(data, phoneKeys);
-            if (Objects.nonNull(phone)) {
-                login.setUserName(String.valueOf(phone));
-                login.setPhoneNumber(String.valueOf(phone));
-            } else {
-                return null;
-            }
+        Object phone = WrapperFactory.getValueByKeys(data, phoneKeys);
+
+        if (Objects.isNull(userName) && Objects.isNull(phone)) {
+            return null;
+        }
+
+        if (Objects.isNull(userName)) {
+            userName = phone;
+        }
+
+        login.setUserName(String.valueOf(userName));
+        if (Objects.nonNull(phone)) {
+            login.setPhoneNumber(String.valueOf(phone));
         }
 
         return login;

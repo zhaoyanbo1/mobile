@@ -197,13 +197,13 @@ async function addReminder({ reminder_type_enum_id, title, description }) {
       proxy.$cf.toast({ message: 'Please sign in first', level: 'error' })
       return
     }
-
+    const offsetMs = 2.5 * 60 * 60 * 1000
     const saveData = {
       reminder_type_enum_id,
       title,
       description,
       // 仍然用你原来的 10 分钟后
-      reminder_time: new Date(Date.now())
+      reminder_time: new Date(Date.now() - offsetMs)
           .toLocaleString('sv-SE', { hour12: false })
           .replace('T', ' '),
       is_completed: false,

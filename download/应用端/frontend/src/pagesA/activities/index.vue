@@ -210,6 +210,15 @@ const participantOptions = Object.freeze(Array.from({ length: 9 }, (_, index) =>
 
 const mySchedule = computed(() => schedule.value)
 
+/* ===== 新增：把字符串时间转成毫秒 ===== */
+function toMs (val) {
+  if (!val) return NaN
+  // 支持 "2025-11-04 12:00" / "2025-11-04T12:00:00Z"
+  const str = String(val).replace(' ', 'T')
+  const d = new Date(str)
+  return d.getTime()
+}
+
 function goBack () {
   history.length > 1 ? history.back() : uni.switchTab({ url: '/pages/index/index' })
 }
@@ -397,16 +406,51 @@ function validateForm () {
   return true
 }
 
+/* ===== 这里是核心修改 ===== */
 async function loadOverview () {
   try {
     loading.value = true
     error.value = ''
     const user = await ensureUser()
     const data = await callApi('GET', '/api/team-activities', null, { userId: user.id })
+
+    // 今天 00:00
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayTs = todayStart.getTime()
+
+// 活动
     const list = Array.isArray(data?.activities) ? data.activities : []
-    activities.value = list.map(mapActivity)
+    const mappedActivities = list
+        .map(mapActivity)
+        .filter(act => {
+          const ts = toMs(act.timeIso || act.time)
+          // 只要今天(含)和未来
+          return !Number.isNaN(ts) && ts >= todayTs
+        })
+        .sort((a, b) => {
+          const ta = toMs(a.timeIso || a.time)
+          const tb = toMs(b.timeIso || b.time)
+          return ta - tb
+        })
+    activities.value = mappedActivities
+
+// Upcoming reminders
     const reminders = Array.isArray(data?.schedule) ? data.schedule : []
-    schedule.value = reminders.map(mapReminder)
+    const mappedSchedule = reminders
+        .map(mapReminder)
+        .filter(rem => {
+          const ts = toMs(rem.timeIso || rem.time)
+          return !Number.isNaN(ts) && ts >= todayTs
+        })
+        .sort((a, b) => {
+          const ta = toMs(a.timeIso || a.time)
+          const tb = toMs(b.timeIso || b.time)
+          return ta - tb
+        })
+    schedule.value = mappedSchedule
+
+
     if (data?.currentUser) {
       currentUser.value = mapUser(data.currentUser)
     }
@@ -476,6 +520,7 @@ onShow(() => {
   loadOverview()
 })
 </script>
+
 
 <style scoped>
 .page {

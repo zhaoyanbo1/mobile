@@ -139,7 +139,7 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow, onHide, onUnload } from '@dcloudio/uni-app'
 import imApi from '@/api/page/im.js'
 import activitiesApi from '@/api/page/activities.js'
 import useNotificationStore from '@/api/utils/notificationStore'
@@ -161,6 +161,28 @@ const activitiesError = ref('')
 
 const notifications = useNotificationStore()
 
+// ===== 新增：轮询相关 =====
+let pollTimer = null
+let isFetching = false
+const POLL_INTERVAL = 1000 // 3 秒一次
+
+function startPolling() {
+  if (pollTimer) return
+  pollTimer = setInterval(() => {
+    // 防止上一次没返回又发下一次
+    if (!isFetching) {
+      loadMessages(false) // 不要每次都强制滚到底部
+    }
+  }, POLL_INTERVAL)
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
 onLoad(async (q) => {
   if (q?.peerId) peerId.value = Number(q.peerId)
   if (q?.nickname) peerName.value = decodeURIComponent(q.nickname)
@@ -173,8 +195,21 @@ onLoad(async (q) => {
   }
 
   syncConversationMapping()
-  await loadMessages()
+  await loadMessages(true)
   scrollToBottom(true)
+})
+
+// 页面回到前台再开轮询
+onShow(() => {
+  startPolling()
+})
+
+// 离开页面或进入后台就停
+onHide(() => {
+  stopPolling()
+})
+onUnload(() => {
+  stopPolling()
 })
 
 function parseContent(contentType, rawContent) {
@@ -208,18 +243,35 @@ function normalizeMsg(m) {
   }
 }
 
-async function loadMessages() {
+// 加了个参数 keepScroll：轮询过来的就不要每次顶到底部
+async function loadMessages(keepScrollToBottom = true) {
   if (!conversationId.value) return
-  const res = await imApi.getMessages(conversationId.value, null, 20)
-  const list = (res?.data?.list ?? res?.list ?? res ?? []).map(normalizeMsg)
-  messages.value = list
-  sortMessages()
-  recomputeInviteStatuses()
-  scrollToBottom(true)
+  if (isFetching) return
+  isFetching = true
+  try {
+    const res = await imApi.getMessages(conversationId.value, null, 20)
+    const list = (res?.data?.list ?? res?.list ?? res ?? []).map(normalizeMsg)
 
-  const latest = messages.value.length ? messages.value[messages.value.length - 1] : null
-  syncConversationMapping()
-  markMessagesAsRead(latest?.messageId)
+    // 只有当有新消息时才替换并滚动
+    const oldLastId = messages.value.length ? messages.value[messages.value.length - 1].messageId : null
+    messages.value = list
+    sortMessages()
+    recomputeInviteStatuses()
+
+    // 判断是否有新消息
+    const newLastId = messages.value.length ? messages.value[messages.value.length - 1].messageId : null
+    const hasNew = oldLastId !== newLastId
+
+    if (keepScrollToBottom || hasNew) {
+      scrollToBottom(true)
+    }
+
+    const latest = messages.value.length ? messages.value[messages.value.length - 1] : null
+    syncConversationMapping()
+    markMessagesAsRead(latest?.messageId)
+  } finally {
+    isFetching = false
+  }
 }
 
 function sortMessages() {
@@ -473,9 +525,17 @@ function markMessagesAsRead(latestMessageId) {
 }
 
 function goBack() {
-  history.length > 1 ? history.back() : null
+  // 先停掉轮询，保险
+  stopPolling()
+
+  if (typeof uni !== 'undefined' && uni.navigateBack) {
+    uni.navigateBack()
+  } else {
+    history.length > 1 ? history.back() : null
+  }
 }
 </script>
+
 
 <style scoped>
 .chat-page {

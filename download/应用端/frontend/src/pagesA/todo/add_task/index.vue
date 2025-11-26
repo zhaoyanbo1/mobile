@@ -333,6 +333,22 @@ async function saveReminder () {
       return
     }
 
+// 把字符串变成 Date，注意把 "-" 换成 "/"，兼容度更好
+    const origin = new Date(String(formData.value.reminder_time).replace(/-/g, '/'))
+
+// 减去 2.5 小时（2.5 * 60 * 60 * 1000 = 9_000_000）
+    const adjusted = new Date(origin.getTime() - 2.5 * 60 * 60 * 1000)
+
+// 再转回你接口常用的 "YYYY-MM-DD HH:mm:ss" 字符串
+    const y = adjusted.getFullYear()
+    const m = String(adjusted.getMonth() + 1).padStart(2, '0')
+    const d = String(adjusted.getDate()).padStart(2, '0')
+    const hh = String(adjusted.getHours()).padStart(2, '0')
+    const mm = String(adjusted.getMinutes()).padStart(2, '0')
+    const ss = String(adjusted.getSeconds()).padStart(2, '0')
+    formData.value.reminder_time = `${y}-${m}-${d} ${hh}:${mm}:${ss}`
+
+
     const userRes = await proxy.$cf.login.getLoginUser()
     if (!userRes.success) {
       proxy.$cf.toast({ message: 'Please sign in first', level: 'error' })

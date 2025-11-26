@@ -4,7 +4,7 @@
     <view class="topbar">
       <!-- ✅ 点击这里退出并回登录页 -->
       <image
-          :src="icons.menu"
+          :src="icons"
           mode="widthFix"
           class="icon"
           @click="logoutAndGoLogin"
@@ -16,7 +16,7 @@
     <view class="page bg-[#F8F9F8]">
       <!-- 顶部人物图 -->
       <view class="hero-container">
-        <image src="/static/elder-avatar.png" class="hero-image" mode="aspectFill" />
+        <image src="@/static/elder-avatar.png" class="hero-image" mode="aspectFill" />
         <view class="hero-gradient"></view>
       </view>
 
@@ -75,12 +75,14 @@
 
 <script setup lang="ts">
 import { computed, getCurrentInstance } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+// import { onShow } from '@dcloudio/uni-app'
 import { MessageCircle, Users, ListChecks } from 'lucide-vue-next'
 import menuIcon from '@/static/gg_menu-left-alt.svg'
 import api from '@/api/index.js'
 import activitiesApi from '@/api/page/activities.js'
 import useNotificationStore from '@/api/utils/notificationStore'
+
+import { onLoad, onShow } from '@dcloudio/uni-app'
 
 const { proxy } = getCurrentInstance()
 const icons = { menu: menuIcon }
@@ -176,6 +178,15 @@ async function logoutAndGoLogin () {
   uni.reLaunch({ url: LOGIN_PAGE })
 }
 
+onLoad(() => {
+  const key = 'ai_chat_conversation'
+  const cache = uni.getStorageSync(key)
+  if (cache) {
+    console.log('[Social] 首次进入时清理 AI Chat 缓存')
+    uni.removeStorageSync(key)
+  }
+})
+
 onShow(() => {
   refreshBadges()
 })
@@ -205,14 +216,14 @@ onShow(() => {
 .hero-container {
   position: relative;
   width: 100%;
-  height: 45vh;
+  height: 70vh;
   overflow: hidden;
 }
 .hero-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 30%;
+  object-position: center 10%;
   transition: transform 0.5s ease;
 }
 .hero-container:hover .hero-image {
@@ -233,7 +244,7 @@ onShow(() => {
 /* 按钮区 */
 .button-area {
   width: 100%;
-  margin-top: -60rpx;
+  margin-top: -300rpx;
   padding: 0 0 60rpx;
   z-index: 5;
   display: flex;

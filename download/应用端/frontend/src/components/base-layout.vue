@@ -35,19 +35,38 @@ const tabList = ref(dynamicTabBars)
 const isTab = ref(false)
 const showCoachButton = ref(false)
 const proxy = getCurrentInstance()?.proxy
-const aiChatRoute = 'pagesA/chat/ai_chat/index'
+const aiChatRoute = ['pagesA/chat/ai_chat/index']
+const loginRoutes = [
+  'pages/login/index',
+]
 
 const checkIsTab = () => {
   const pages = getCurrentPages()
   if (!pages.length) return
   const curPage = pages[pages.length - 1]
-  const route = curPage.route
-  // Prefix-match against tab config; also handle routes ending with /index
+  const route = curPage.route || ''        // 例如 'pages/login/index'
+
+  const normalizedRoute = route.replace(/^\//, '')
+
+  // 是否是 Tab 页面（保持你原来的逻辑）
   isTab.value = tabList.value.some(item =>
-      route.includes(item.url.replace(/^\//, '').replace('/index', ''))
+      normalizedRoute.includes(
+          item.url.replace(/^\//, '').replace('/index', '')
+      )
   )
 
-  showCoachButton.value = !!route && !route.includes(aiChatRoute)
+  // 当前是否是 AI 聊天页
+  const isAiChat = normalizedRoute.startsWith(
+      aiChatRoute.replace(/^\//, '')
+  )
+
+  // 当前是否是登录相关页面
+  const isLogin = loginRoutes.some(r =>
+      normalizedRoute.startsWith(r.replace(/^\//, ''))
+  )
+
+  // 只要不是 AI 聊天页 & 不是登录页，就显示按钮
+  showCoachButton.value = !!route && !isAiChat && !isLogin
 }
 
 const goAiChat = () => {

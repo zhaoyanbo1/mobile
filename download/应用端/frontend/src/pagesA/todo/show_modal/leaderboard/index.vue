@@ -30,7 +30,7 @@
 
               <!-- 头像右下角加好友按钮 -->
               <view
-                  v-if="!isMe(rows[1])"
+                  v-if="!isMe(rows[1]) && !isFriend(rows[1])"
                   class="friend-fab"
                   :class="{ on: statusOf(rows[1]) !== 'NONE' }"
                   @tap.stop="onPlusTap(rows[1])"
@@ -59,7 +59,7 @@
 
               <!-- 头像右下角加好友按钮 -->
               <view
-                  v-if="!isMe(rows[0])"
+                  v-if="!isMe(rows[0]) && !isFriend(rows[0])"
                   class="friend-fab"
                   :class="{ on: statusOf(rows[0]) !== 'NONE' }"
                   @tap.stop="onPlusTap(rows[0])"
@@ -88,7 +88,7 @@
 
               <!-- 头像右下角加好友按钮 -->
               <view
-                  v-if="!isMe(rows[2])"
+                  v-if="!isMe(rows[2]) && !isFriend(rows[2])"
                   class="friend-fab"
                   :class="{ on: statusOf(rows[2]) !== 'NONE' }"
                   @tap.stop="onPlusTap(rows[2])"
@@ -123,7 +123,7 @@
           <view class="avatar-cell">
             <image class="list-avatar" :src="getAvatarByRank(idx + 4)" />
             <view
-                v-if="!isMe(item)"
+                v-if="!isMe(item) && !isFriend(item)"
                 class="friend-fab small"
                 :class="{ on: statusOf(item) !== 'NONE' }"
                 @tap.stop="onPlusTap(item)"
@@ -144,21 +144,6 @@
         </view>
       </view>
     </view>
-
-    <!-- ✅ 固定底部我的排名展示 -->
-<!--    <view v-if="me" class="my-rank-bottom">-->
-<!--      <view class="bottom-left">-->
-<!--        <image class="bottom-avatar" :src="getAvatarByRank(me.rank)" />-->
-<!--        <view class="bottom-info">-->
-<!--          <text class="bottom-name">{{ me.username || 'Me' }}</text>-->
-<!--          <text class="bottom-rank">Rank #{{ me.rank }}</text>-->
-<!--        </view>-->
-<!--      </view>-->
-<!--      <view class="bottom-right">-->
-<!--        <text class="bottom-score">{{ me.medalCount }}</text>-->
-<!--        <text class="bottom-icon">🏅</text>-->
-<!--      </view>-->
-<!--    </view>-->
 
     <!-- ✅ 固定底部 My Rank Card -->
     <view v-if="me" class="my-rank-fixed">
@@ -181,7 +166,8 @@
 
 <script>
 import api from '@/api/page/medals'
-// 这里按你之前的接口导出方式引入好友相关方法；若你的文件名是 medals.js，请改成 .js
+// 这里引一次总的 api，用它拿好友列表
+import baseApi from '@/api/index.js'
 import {
   createFriendRequest,
   acceptFriendRequest,
@@ -198,6 +184,8 @@ export default {
       total: 0,
       loading: false,
       err: '',
+      // 我自己的好友 id 集合
+      friendIds: [],
       avatarPool: [
         'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop',
         'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop',
@@ -229,12 +217,18 @@ export default {
           (item.userId === this.me.userId || item.userId === this.me.user_info_id)
       )
     },
+    // 新增：判断这个榜单用户是不是我好友
+    isFriend(item) {
+      if (!item) return false
+      const uid = item.userId || item.user_info_id
+      if (!uid) return false
+      return this.friendIds.includes(String(uid))
+    },
     statusOf(item) {
-      // 统一读取 friendStatus：NONE / PENDING_OUT / PENDING_IN / FRIEND
       return item.friendStatus || 'NONE'
     },
 
-    /* 右下角按钮点击——复用你原有加好友流程 */
+    // 右下角按钮点击
     async onPlusTap(item) {
       const status = this.statusOf(item)
       try {
@@ -242,17 +236,16 @@ export default {
           const resp = await createFriendRequest(item.userId)
           item.friendStatus = 'PENDING_OUT'
           item.friendRequestId = resp?.id
-          uni.showToast({ title: '已发送申请', icon: 'none' })
+          uni.showToast({ title: 'Application sent', icon: 'none' })
         } else if (status === 'PENDING_IN') {
           await acceptFriendRequest(item.friendRequestId)
           item.friendStatus = 'FRIEND'
-          uni.showToast({ title: '已成为好友', icon: 'none' })
+          uni.showToast({ title: 'Has become a friend', icon: 'none' })
         } else if (status === 'FRIEND') {
-          // 如无需“取消好友”，可改为仅提示
           await declineFriendRequest(item.friendRequestId)
           item.friendStatus = 'NONE'
           item.friendRequestId = null
-          uni.showToast({ title: '已取消好友关系', icon: 'none' })
+          uni.showToast({ title: 'Friendship relationship has been cancelled.', icon: 'none' })
         } else if (status === 'PENDING_OUT') {
           uni.showToast({ title: '已发送申请，待对方同意', icon: 'none' })
         }
@@ -261,32 +254,42 @@ export default {
       }
     },
 
-    /* 数据加载 */
+    // 拉好友列表，只为了“进去就知道谁是好友”
+    async loadMyFriends() {
+      try {
+        const res = await baseApi.friends.getMyFriendList()
+        const list = Array.isArray(res) ? res : []
+        // 统一存成字符串，后面好比
+        this.friendIds = list
+            .map((f) => f.userId || f.user_info_id)
+            .filter(Boolean)
+            .map((x) => String(x))
+      } catch (e) {
+        // 拉失败也不要影响榜单显示
+        this.friendIds = []
+      }
+    },
+
     /* 数据加载 */
     async fetchData(initial = false) {
       try {
         this.loading = true
-        // 调用接口
         const resp = await api.getLeaderboard(undefined, this.page, this.size)
         const list = resp.list ?? resp.records ?? resp.data ?? []
         this.rows = initial ? list : this.rows.concat(list)
         this.total = resp.total ?? resp.totalCount ?? this.rows.length
 
-        // ✅ 1️⃣ 如果接口返回了 me/self，直接使用
         if (resp.me || resp.self) {
           this.me = resp.me ?? resp.self
         } else {
-          // ✅ 2️⃣ 否则尝试从本地存储读取登录用户
           const localUser = uni.getStorageSync('user')
           if (localUser && localUser.userId) {
-            // ✅ 3️⃣ 在榜单中查找当前用户
             const foundIdx = list.findIndex(
                 (x) =>
                     x.userId === localUser.userId ||
                     x.user_info_id === localUser.userId
             )
 
-            // ✅ 4️⃣ 找到了就计算排名
             if (foundIdx !== -1) {
               const found = list[foundIdx]
               this.me = {
@@ -294,16 +297,15 @@ export default {
                 username: found.username || localUser.username,
                 medalCount: found.medalCount || 0,
                 rank: foundIdx + 1,
-                avatarUrl: localUser.avatarUrl
+                avatarUrl: localUser.avatarUrl,
               }
             } else {
-              // ✅ 没找到就兜底显示用户信息
               this.me = {
                 userId: localUser.userId,
                 username: localUser.username,
                 medalCount: 0,
                 rank: '-',
-                avatarUrl: localUser.avatarUrl
+                avatarUrl: localUser.avatarUrl,
               }
             }
           } else {
@@ -316,9 +318,11 @@ export default {
         this.loading = false
       }
     },
-
   },
-  onLoad() {
+  async onLoad() {
+    // 先把好友拉出来
+    await this.loadMyFriends()
+    // 再拉榜单
     this.fetchData(true)
   },
 }
@@ -393,7 +397,7 @@ export default {
 .stand-2{ height:160rpx; background:linear-gradient(to bottom,#98a18d,#7e8c77); }
 .stand-3{ height:130rpx; background:linear-gradient(to bottom,#b0bb9f,#a3b18a); }
 
-/* 头像右下角的加好友圆形按钮（新增，不影响原样式） */
+/* 头像右下角的加好友圆形按钮 */
 .friend-fab{
   position:absolute;
   right:-20rpx;
@@ -432,33 +436,29 @@ export default {
 .list-right{ text-align:right; }
 .list-score{ font-size:34rpx; color:#ddb892; font-weight:800; }
 
-/* ✅ 固定底部 My Rank Card 样式 */
+/* 固定底部 My Rank Card 样式 */
 .my-rank-fixed {
   position: fixed;
-  bottom: 24rpx; /* ❗ 往下挪一些，避免贴边 */
+  bottom: 24rpx;
   left: 0;
   right: 0;
   z-index: 100;
   display: flex;
   justify-content: center;
-  background: transparent; /* 让卡片更干净 */
+  background: transparent;
 }
-
-/* ✅ 更扁更长的卡片样式 */
 .my-rank-card {
-  width: 92%; /* 卡片整体更宽 */
-  max-width: 700rpx; /* 限制最大宽度，防止平板太大 */
+  width: 92%;
+  max-width: 700rpx;
   background: #ffffff;
   border: 6rpx solid #a3b18a;
-  border-radius: 28rpx; /* 圆角稍微小一点，看起来更贴底 */
+  border-radius: 28rpx;
   box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.08);
-  padding: 24rpx 36rpx; /* 内边距减少，变扁 */
+  padding: 24rpx 36rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
-/* 头像稍微缩小一点，让比例更自然 */
 .my-rank-card .avatar {
   width: 100rpx;
   height: 100rpx;
@@ -466,8 +466,6 @@ export default {
   border: 4rpx solid #a3b18a;
   object-fit: cover;
 }
-
-/* 左右区域对齐优化 */
 .my-rank-card .left {
   display: flex;
   align-items: center;
@@ -496,6 +494,4 @@ export default {
   color: #ddb892;
   font-weight: 800;
 }
-
-
 </style>
