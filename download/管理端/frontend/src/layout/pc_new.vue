@@ -99,7 +99,7 @@
   let app_vip = import.meta.env.VITE_APP_VIP === 'true'
 
   if (!app_vip) {
-    left_title = 'CodeFlying'
+    left_title = ''
   }
 
   const route = useRoute();

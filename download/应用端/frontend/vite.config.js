@@ -24,7 +24,7 @@ export default defineConfig(({ command, mode }) => {
                 ],
                 dts: false
             }),
-            banner('/* codeflying */')
+            banner('/*  */')
         ],
         css: {
             postcss: {

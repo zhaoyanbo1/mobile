@@ -229,7 +229,7 @@ if (app_vip) {
   end_content_show.value = ''
 } else {
   end_content_show.value = props.end_content
-  left_title = 'CodeFlying!'
+  left_title = ''
 }
 
 /* ---------- Navigation & Agreements ---------- */

@@ -14,7 +14,7 @@
         <router-view   />
       </div>
       <div class="foot w-full bg-color-white flex-c-center-center">
-        <span>Powered by CodeFlying</span>
+        <span>Powered by</span>
       </div>  
     </div>
   

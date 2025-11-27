@@ -9,7 +9,7 @@ export default {
         login_btn: "Login",
         login_msg: "没有账号?",
         login_reg: "现在去注册",
-        login_bottom_msg: "本应用由AI智能软件开发平台CodeFlying自动开发",
+        login_bottom_msg: "",
         wx_login: "手机号快速登录",
         read_and_agree: "阅读并同意",
         service_agreement: "服务协议",
